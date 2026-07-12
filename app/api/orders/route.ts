@@ -107,24 +107,38 @@ export async function POST(request: NextRequest) {
  
 
   // Increment coupon usage atomically — function returns false if max_uses already reached
-
-  if (couponId) {
-
-    await supabase.from('coupon_uses').insert({
-
-      coupon_id:        couponId,
-
-      customer_id:      user.id,
-
-      order_id:         order.id,
-
+if (couponId) {
+  // Record coupon usage (ignore duplicate usage entries)
+  const { error: couponUseError } = await supabase
+    .from('coupon_uses')
+    .insert({
+      coupon_id: couponId,
+      customer_id: user.id,
+      order_id: order.id,
       discount_applied: safeDiscount,
+    });
 
-    }).catch(() => {}); // unique constraint handles duplicate use per customer
-
-    await supabase.rpc('increment_coupon_uses', { p_coupon_id: couponId }).catch(() => {});
-
+  // Ignore duplicate key violation (23505)
+  if (couponUseError && couponUseError.code !== '23505') {
+    console.error('Failed to record coupon usage:', couponUseError);
   }
+
+  // Increment coupon usage count
+  const { data: incremented, error: incrementError } = await supabase.rpc(
+    'increment_coupon_uses',
+    {
+      p_coupon_id: couponId,
+    }
+  );
+
+  if (incrementError) {
+    console.error('Failed to increment coupon usage:', incrementError);
+  } else if (!incremented) {
+    console.warn(
+      `Coupon ${couponId} has reached its maximum usage limit.`
+    );
+  }
+}
 
 
  
