@@ -477,3 +477,23 @@
   .hero-cta  { animation: dv-hero-word  700ms cubic-bezier(.16,.84,.44,1)  700ms both; }
 
 }
+
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
