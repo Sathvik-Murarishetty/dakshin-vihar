@@ -1,3 +1,22 @@
+export interface MealItem {
+
+  id: string;
+
+  meal_id: string;
+
+  name: string;
+
+  is_veg: boolean;
+
+  sort_order: number;
+
+  created_at: string;
+
+}
+
+
+ 
+
 export interface Meal {
 
   id: string;
@@ -23,6 +42,8 @@ export interface Meal {
   created_by: string | null;
 
   created_at: string;
+
+  meal_items?: MealItem[];
 
 }
 
@@ -152,19 +173,40 @@ export interface MenuItem {
 
  
 
+export interface OrderItem {
+
+  id: string;
+
+  order_id: string;
+
+  menu_item_id: string | null;
+
+  meal_id: string | null;
+
+  quantity: number;
+
+  unit_price: number;
+
+  subtotal: number;
+
+  created_at: string;
+
+  menu_item?: Pick<MenuItem, 'id' | 'name'>;
+
+  meal?: Pick<Meal, 'id' | 'name' | 'meal_slot'>;
+
+}
+
+
+ 
+
 export interface Order {
 
   id: string;
 
   customer_id: string;
 
-  menu_item_id: string | null;
-
-  meal_id: string | null;
-
   meal_date: string;
-
-  meal_slot: 'lunch' | 'dinner' | null;
 
   status: 'pending' | 'confirmed' | 'preparing' | 'out_for_delivery' | 'delivered' | 'canceled';
 
@@ -174,7 +216,7 @@ export interface Order {
 
   coupon_id: string | null;
 
-  unit_price: number;
+  subtotal: number;
 
   discount_amount: number;
 
@@ -184,9 +226,7 @@ export interface Order {
 
   created_at: string;
 
-  menu_item?: Pick<MenuItem, 'id' | 'name' | 'description'> & { category?: Pick<MenuCategory, 'name'> };
-
-  meal?: Pick<Meal, 'id' | 'name' | 'meal_slot' | 'description'>;
+  order_items?: OrderItem[];
 
   driver?: Pick<Driver, 'id' | 'name' | 'phone'>;
 

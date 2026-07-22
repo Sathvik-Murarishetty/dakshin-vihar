@@ -48,11 +48,11 @@ export default async function AccountPage({
 
   const [{ data: profileData }, { data: subscriptions }, { data: orders }] = await Promise.all([
 
-    supabase.from('profiles').select('full_name, email, phone, address_line1, city').eq('id', user.id).single(),
+    supabase.from('profiles').select('full_name, email, phone').eq('id', user.id).single(),
 
     supabase.from('subscriptions').select('*, plan:subscription_plans(name, price_monthly)').eq('customer_id', user.id).order('created_at', { ascending: false }),
 
-    supabase.from('orders').select('*, meal:meals(name,meal_slot), menu_item:menu_items(name)').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('orders').select('*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name, meal_slot)), driver:drivers(name, phone)').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(20),
 
   ]);
 
@@ -77,11 +77,11 @@ export default async function AccountPage({
 
       .upsert({ id: user.id, email: user.email!, role: 'customer' }, { onConflict: 'id' })
 
-      .select('full_name, email, phone, address_line1, city')
+      .select('full_name, email, phone')
 
       .single();
 
-    profile = healed ?? { full_name: null, email: user.email!, phone: null, address_line1: null, city: null };
+    profile = healed ?? { full_name: null, email: user.email!, phone: null };
 
   }
 
@@ -92,17 +92,33 @@ export default async function AccountPage({
 
     <div className="container-dv section-pad">
 
-      <div className="mb-10 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      {/* Profile hero */}
 
-        <div>
+      <div className="mb-8 flex items-center gap-5 rounded-[24px] px-6 py-5 sm:px-8"
 
-          <p className="overline mb-2">Dashboard</p>
+        style={{ background: 'linear-gradient(135deg, #E8DFC8 0%, #F0E8D4 60%, #EBE0C6 100%)', border: '1px solid rgba(216,177,90,.25)' }}>
 
-          <h1 className="font-display text-[40px] font-semibold" style={{ color: '#162019' }}>
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[22px] font-bold"
 
-            My Account
+          style={{ background: 'rgba(22,32,25,.1)', color: '#162019' }}>
 
-          </h1>
+          {(profile?.full_name || profile?.email || 'U')[0].toUpperCase()}
+
+        </div>
+
+        <div className="flex-1 min-w-0">
+
+          <p className="font-display text-[22px] font-semibold leading-tight" style={{ color: '#162019' }}>
+
+            {profile?.full_name || 'My Account'}
+
+          </p>
+
+          <p className="mt-0.5 text-[13px] truncate" style={{ color: '#4B5A50' }}>
+
+            {profile?.email}
+
+          </p>
 
         </div>
 

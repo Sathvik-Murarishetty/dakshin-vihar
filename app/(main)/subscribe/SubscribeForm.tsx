@@ -3,7 +3,7 @@
 
  
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -12,13 +12,40 @@ import { useRouter } from 'next/navigation';
 
 const PLANS = [
 
-  { id: 'plan_lunch',  name: 'Lunch Daily',    price: 1499, desc: 'Fresh lunch every day.' },
+  { id: 'plan_lunch',  name: 'Lunch Daily',    price: 250, desc: 'Fresh lunch every day.' },
 
-  { id: 'plan_dinner', name: 'Dinner Daily',   price: 1499, desc: 'Authentic dinner every evening.' },
+  { id: 'plan_dinner', name: 'Dinner Daily',   price: 250, desc: 'Authentic dinner every evening.' },
 
-  { id: 'plan_both',   name: 'Lunch + Dinner', price: 2699, desc: 'Both meals, every day. Best value.' },
+  { id: 'plan_both',   name: 'Lunch + Dinner', price: 450, desc: 'Both meals, every day. Best value.' },
 
 ];
+
+
+ 
+
+const DIET_OPTIONS = [
+
+  { key: 'veg'    as const, label: 'Vegetarian',     surcharge: 0  },
+
+  { key: 'non-veg'as const, label: 'Non-Vegetarian', surcharge: 30 },
+
+];
+
+
+ 
+
+const PACKAGING_OPTIONS = [
+
+  { key: 'normal'    as const, label: 'Standard',           detail: 'Regular packaging',        surcharge: 0  },
+
+  { key: 'microwave' as const, label: 'Microwave-Safe',     detail: 'Premium packaging +AED 50', surcharge: 50 },
+
+];
+
+
+ 
+
+const SS_KEY = 'dv_subscribe_draft';
 
 
  
@@ -36,9 +63,11 @@ export default function SubscribeForm({ profile }: Props) {
 
   const router = useRouter();
 
-  const [planId,   setPlanId]   = useState('plan_lunch');
+  const [planId,    setPlanId]    = useState('plan_lunch');
 
-  const [dietType, setDietType] = useState<'veg' | 'non-veg' | 'both'>('veg');
+  const [dietType,  setDietType]  = useState<'veg' | 'non-veg'>('veg');
+
+  const [packaging, setPackaging] = useState<'normal' | 'microwave'>('normal');
 
   const [name,     setName]     = useState(profile?.full_name ?? '');
 
@@ -55,6 +84,45 @@ export default function SubscribeForm({ profile }: Props) {
   const [error,    setError]    = useState<string | null>(null);
 
   const [success,  setSuccess]  = useState(false);
+
+
+ 
+
+  // Restore any form state saved before a login redirect
+
+  useEffect(() => {
+
+    try {
+
+      const saved = sessionStorage.getItem(SS_KEY);
+
+      if (saved) {
+
+        const d = JSON.parse(saved);
+
+        if (d.planId)   setPlanId(d.planId);
+
+        if (d.dietType) setDietType(d.dietType as 'veg' | 'non-veg');
+
+        if (d.packaging) setPackaging(d.packaging as 'normal' | 'microwave');
+
+        if (d.name)     setName(d.name);
+
+        if (d.phone)    setPhone(d.phone);
+
+        if (d.address)  setAddress(d.address);
+
+        if (d.city)     setCity(d.city);
+
+        if (d.notes)    setNotes(d.notes);
+
+        sessionStorage.removeItem(SS_KEY);
+
+      }
+
+    } catch { /* ignore */ }
+
+  }, []);
 
 
  
@@ -76,7 +144,7 @@ export default function SubscribeForm({ profile }: Props) {
 
       headers: { 'Content-Type': 'application/json' },
 
-      body: JSON.stringify({ planId, dietType, notes, name, phone, address, city }),
+      body: JSON.stringify({ planId, dietType, packaging, notes, name, phone, address, city }),
 
     });
 
@@ -86,6 +154,22 @@ export default function SubscribeForm({ profile }: Props) {
  
 
     if (data.error) {
+
+      // Not logged in — save form state so it survives the login round-trip
+
+      if (res.status === 401) {
+
+        try {
+
+          sessionStorage.setItem(SS_KEY, JSON.stringify({ planId, dietType, name, phone, address, city, notes }));
+
+        } catch { /* ignore */ }
+
+        router.push('/login?redirect=/subscribe');
+
+        return;
+
+      }
 
       setError(data.error);
 
@@ -136,47 +220,45 @@ export default function SubscribeForm({ profile }: Props) {
 
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
 
-      {/* Plan selector */}
+      {/* Diet */}
 
       <div className="flex flex-col gap-3">
 
         <label className="text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#162019' }}>
 
-          Choose Your Plan
+          Diet Preference
 
         </label>
 
-        <div className="grid gap-3 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2">
 
-          {PLANS.map((p) => (
+          {DIET_OPTIONS.map((d) => (
 
             <button
 
-              type="button"
+              type="button" key={d.key}
 
-              key={p.id}
+              onClick={() => setDietType(d.key)}
 
-              onClick={() => setPlanId(p.id)}
-
-              className="flex flex-col rounded-[20px] p-5 text-left transition-all duration-200"
+              className="flex items-center justify-between rounded-[16px] px-5 py-4 text-left transition-all duration-200"
 
               style={{
 
-                border: planId === p.id ? '2px solid #D8B15A' : '1px solid rgba(22,32,25,.12)',
+                border: dietType === d.key ? '2px solid #D8B15A' : '1px solid rgba(22,32,25,.12)',
 
-                background: planId === p.id ? 'rgba(216,177,90,.06)' : '#FCFBF8',
+                background: dietType === d.key ? 'rgba(216,177,90,.06)' : '#FCFBF8',
 
               }}
 
             >
 
-              <span className="font-display text-[18px] font-semibold" style={{ color: '#162019' }}>{p.name}</span>
+              <span className="font-semibold text-[14px]" style={{ color: '#162019' }}>{d.label}</span>
 
-              <span className="mt-1 text-[13px]" style={{ color: '#4B5A50' }}>{p.desc}</span>
+              {d.surcharge > 0 && (
 
-              <span className="mt-3 font-bold" style={{ color: '#D8B15A' }}>AED {p.price}/mo</span>
+                <span className="text-[12px] font-medium" style={{ color: '#D8B15A' }}>+AED {d.surcharge}/mo</span>
 
-              <span className="mt-0.5 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>billed monthly · cancel anytime</span>
+              )}
 
             </button>
 
@@ -189,45 +271,118 @@ export default function SubscribeForm({ profile }: Props) {
 
  
 
-      {/* Diet */}
+      {/* Packaging */}
 
       <div className="flex flex-col gap-3">
 
         <label className="text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#162019' }}>
 
-          Diet Preference
+          Packaging
 
         </label>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid gap-3 sm:grid-cols-2">
 
-          {(['veg', 'non-veg', 'both'] as const).map((d) => (
+          {PACKAGING_OPTIONS.map((p) => (
 
             <button
 
-              type="button" key={d}
+              type="button" key={p.key}
 
-              onClick={() => setDietType(d)}
+              onClick={() => setPackaging(p.key)}
 
-              className="rounded-full px-5 py-2 text-[13px] font-medium transition-all duration-200"
+              className="flex flex-col rounded-[16px] px-5 py-4 text-left transition-all duration-200"
 
               style={{
 
-                border: dietType === d ? '1.5px solid #D8B15A' : '1px solid rgba(22,32,25,.15)',
+                border: packaging === p.key ? '2px solid #D8B15A' : '1px solid rgba(22,32,25,.12)',
 
-                background: dietType === d ? 'rgba(216,177,90,.1)' : 'transparent',
-
-                color: dietType === d ? '#162019' : '#4B5A50',
+                background: packaging === p.key ? 'rgba(216,177,90,.06)' : '#FCFBF8',
 
               }}
 
             >
 
-              {d.charAt(0).toUpperCase() + d.slice(1)}
+              <span className="font-semibold text-[14px]" style={{ color: '#162019' }}>{p.label}</span>
+
+              <span className="mt-0.5 text-[12px]" style={{ color: p.surcharge > 0 ? '#D8B15A' : '#4B5A50' }}>{p.detail}</span>
 
             </button>
 
           ))}
+
+        </div>
+
+      </div>
+
+
+ 
+
+      {/* Plan selector — shown after diet+packaging so prices reflect choices */}
+
+      <div className="flex flex-col gap-3">
+
+        <label className="text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#162019' }}>
+
+          Choose Your Plan
+
+        </label>
+
+        <div className="grid gap-3 sm:grid-cols-3">
+
+          {PLANS.map((p) => {
+
+            const dietSurcharge = dietType === 'non-veg' ? 30 : 0;
+
+            const packSurcharge = packaging === 'microwave' ? 50 : 0;
+
+            const total = p.price + dietSurcharge + packSurcharge;
+
+            return (
+
+              <button
+
+                type="button"
+
+                key={p.id}
+
+                onClick={() => setPlanId(p.id)}
+
+                className="flex flex-col rounded-[20px] p-5 text-left transition-all duration-200"
+
+                style={{
+
+                  border: planId === p.id ? '2px solid #D8B15A' : '1px solid rgba(22,32,25,.12)',
+
+                  background: planId === p.id ? 'rgba(216,177,90,.06)' : '#FCFBF8',
+
+                }}
+
+              >
+
+                <span className="font-display text-[18px] font-semibold" style={{ color: '#162019' }}>{p.name}</span>
+
+                <span className="mt-1 text-[13px]" style={{ color: '#4B5A50' }}>{p.desc}</span>
+
+                <span className="mt-3 font-bold text-[16px]" style={{ color: '#D8B15A' }}>AED {total}/mo</span>
+
+                {(dietSurcharge > 0 || packSurcharge > 0) && (
+
+                  <span className="mt-0.5 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>
+
+                    Base AED {p.price}{dietSurcharge > 0 ? ` +${dietSurcharge}` : ''}{packSurcharge > 0 ? ` +${packSurcharge}` : ''}
+
+                  </span>
+
+                )}
+
+                <span className="mt-0.5 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>billed monthly · cancel anytime</span>
+
+              </button>
+
+            );
+
+          })}
 
         </div>
 

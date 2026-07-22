@@ -13,16 +13,22 @@ import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 import CartButton from '@/components/CartButton';
 
+import { useCart } from '@/hooks/useCart';
+
 
  
 
 const NAV_LINKS = [
 
-  { label: 'Our Story',    href: '/#story'   },
+  { label: 'Our Story',    href: '/#story'    },
 
-  { label: "Today's Menu", href: '/menu'     },
+  { label: "Today's Menu", href: '/menu'      },
 
-  { label: 'Contact Us',   href: '/#contact' },
+  { label: 'Our Menu',     href: '/our-menu'  },
+
+  { label: 'Subscribe',    href: '/subscribe' },
+
+  { label: 'Contact',      href: '/#contact'  },
 
 ] as const;
 
@@ -58,6 +64,8 @@ export default function NavbarClient({ user }: Props) {
   const [profileOpen, setProfileOpen] = useState(false);
 
   const profileRef = useRef<HTMLDivElement>(null);
+
+  const { isCartOpen, clear: clearCart } = useCart();
 
 
  
@@ -124,6 +132,8 @@ export default function NavbarClient({ user }: Props) {
 
     await supabase.auth.signOut();
 
+    clearCart();
+
     router.push('/');
 
     router.refresh();
@@ -154,6 +164,8 @@ export default function NavbarClient({ user }: Props) {
 
       <div
 
+        id="site-header"
+
         className="pointer-events-none fixed inset-x-0 top-0 z-50 flex justify-center"
 
         style={{
@@ -165,6 +177,8 @@ export default function NavbarClient({ user }: Props) {
           paddingRight: scrolled ? '20px' : '0',
 
           transition: `padding 300ms ${EASE}`,
+
+          display: isCartOpen ? 'none' : undefined,
 
         }}
 
@@ -338,7 +352,7 @@ export default function NavbarClient({ user }: Props) {
 
               ) : (
 
-                <Link href="/login" className="hidden rounded-full px-5 py-2 text-[13px] font-medium transition-all duration-200 md:inline-block"
+                <Link href={`/login?redirect=${encodeURIComponent(pathname)}`} className="hidden rounded-full px-5 py-2 text-[13px] font-medium transition-all duration-200 md:inline-block"
 
                   style={{ border: '1px solid rgba(216,177,90,.35)', color: 'rgba(246,242,233,.75)' }}
 
@@ -448,7 +462,7 @@ export default function NavbarClient({ user }: Props) {
 
             ) : (
 
-              <Link href="/login" className="mobile-item font-display text-[28px] font-semibold" style={{ color: 'rgba(216,177,90,.7)', animationDelay: `${NAV_LINKS.length * 60}ms` }}>Sign In</Link>
+              <Link href={`/login?redirect=${encodeURIComponent(pathname)}`} className="mobile-item font-display text-[28px] font-semibold" style={{ color: 'rgba(216,177,90,.7)', animationDelay: `${NAV_LINKS.length * 60}ms` }}>Sign In</Link>
 
             )}
 

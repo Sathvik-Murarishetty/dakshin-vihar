@@ -15,6 +15,8 @@ import type { Address } from '@/types';
 
 import { X, Plus, Minus, Trash2, Tag, ChevronDown, Phone, MapPin } from 'lucide-react';
 
+import LocationPicker from '@/components/LocationPicker';
+
 
  
 
@@ -36,17 +38,29 @@ export default function CartDrawer() {
 
   const [showAddAddr,  setShowAddAddr]  = useState(false); // toggle for adding a new address
 
-  // Phone
+  // Contact (name + phone)
 
-  const [phone,        setPhone]        = useState('');
+  const [name,           setName]           = useState('');
 
-  const [phoneInput,   setPhoneInput]   = useState('');
+  const [nameInput,      setNameInput]      = useState('');
+
+  const [phone,          setPhone]          = useState('');
+
+  const [phoneInput,     setPhoneInput]     = useState('');
+
+  const [editingContact, setEditingContact] = useState(false);
 
   // Inline new address
+
+  const [newAddrLabel, setNewAddrLabel] = useState('Home');
 
   const [newAddrLine,  setNewAddrLine]  = useState('');
 
   const [newAddrCity,  setNewAddrCity]  = useState('');
+
+  const [newAddrLat,   setNewAddrLat]   = useState<number | null>(null);
+
+  const [newAddrLng,   setNewAddrLng]   = useState<number | null>(null);
 
   const [savingAddr,   setSavingAddr]   = useState(false);
 
@@ -65,11 +79,13 @@ export default function CartDrawer() {
 
  
 
-  const cartTotal  = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const DELIVERY_FEE = 3; // AED 3 standard delivery
 
-  const discount   = couponData?.discountAmount ?? 0;
+  const cartTotal    = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const finalTotal = Math.max(0, cartTotal - discount);
+  const discount     = couponData?.discountAmount ?? 0;
+
+  const finalTotal   = Math.max(0, cartTotal + DELIVERY_FEE - discount);
 
 
  
@@ -110,7 +126,9 @@ export default function CartDrawer() {
 
       .then(({ profile }) => {
 
-        if (profile?.phone) setPhone(profile.phone);
+        if (profile?.phone)     setPhone(profile.phone);
+
+        if (profile?.full_name) setName(profile.full_name);
 
       })
 
@@ -148,15 +166,15 @@ export default function CartDrawer() {
 
       body: JSON.stringify({
 
-        label:         'Home',
+        label:         newAddrLabel,
 
         address_line1: newAddrLine.trim(),
 
         city:          newAddrCity.trim(),
 
-        state:         '',
+        lat:           newAddrLat,
 
-        pincode:       '',
+        lng:           newAddrLng,
 
         is_default:    true,
 
@@ -175,6 +193,12 @@ export default function CartDrawer() {
       setNewAddrLine('');
 
       setNewAddrCity('');
+
+      setNewAddrLabel('Home');
+
+      setNewAddrLat(null);
+
+      setNewAddrLng(null);
 
     }
 
@@ -220,17 +244,15 @@ export default function CartDrawer() {
 
   async function handleCheckout() {
 
-    // ── Validate phone ───────────────────────────────────
+    // ── Validate contact ─────────────────────────────────
+
+    const effectiveName  = name || nameInput.trim();
 
     const effectivePhone = phone || phoneInput.trim();
 
-    if (!effectivePhone) {
+    if (!effectiveName)  { setError('Please add your name before placing an order.'); return; }
 
-      setError('Please add your phone number before placing an order.');
-
-      return;
-
-    }
+    if (!effectivePhone) { setError('Please add your phone number before placing an order.'); return; }
 
 
  
@@ -255,9 +277,15 @@ export default function CartDrawer() {
 
  
 
-    // Save phone to profile if it was just entered
+    // Save contact info to profile if newly entered
 
-    if (!phone && phoneInput.trim()) {
+    const patchData: Record<string, string> = {};
+
+    if (!phone && phoneInput.trim()) patchData.phone     = phoneInput.trim();
+
+    if (!name  && nameInput.trim())  patchData.full_name = nameInput.trim();
+
+    if (Object.keys(patchData).length > 0) {
 
       await fetch('/api/profile', {
 
@@ -265,77 +293,62 @@ export default function CartDrawer() {
 
         headers: { 'Content-Type': 'application/json' },
 
-        body: JSON.stringify({ phone: phoneInput.trim() }),
+        body: JSON.stringify(patchData),
 
       });
 
-      setPhone(phoneInput.trim());
+      if (patchData.phone)     setPhone(patchData.phone);
+
+      if (patchData.full_name) setName(patchData.full_name);
 
     }
 
 
  
 
-    const totalUnits      = items.reduce((s, i) => s + i.quantity, 0);
-
-    const discountPerUnit = totalUnits > 0 ? Math.floor(discount / totalUnits) : 0;
+    const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
 
 
  
 
-    const reqs = items.flatMap((item) =>
+    // Single request — one order basket with all items
 
-      Array.from({ length: item.quantity }, () =>
+    const res = await fetch('/api/orders', {
 
-        fetch('/api/orders', {
+      method: 'POST',
 
-          method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
 
-          headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
 
-          body: JSON.stringify({
+        items: items.map((item) => ({
 
-            ...(item.itemType === 'menu_item' ? { menuItemId: item.mealId } : { mealId: item.mealId }),
+          ...(item.itemType === 'menu_item' ? { menuItemId: item.mealId } : { mealId: item.mealId }),
 
-            mealDate:          item.mealDate,
+          quantity: item.quantity,
 
-            mealSlot:          item.mealSlot,
+        })),
 
-            notes:             notes.trim() || null,
+        mealDate:          items[0]?.mealDate ?? new Date().toISOString().slice(0, 10),
 
-            deliveryAddressId: addressId,
+        notes:             notes.trim() || null,
 
-            couponId:          couponData?.couponId || null,
+        deliveryAddressId: addressId,
 
-            unitPrice:         item.price,
+        couponId:          couponData?.couponId || null,
 
-            discountAmount:    discountPerUnit,
+        discountAmount:    discount,
 
-            finalAmount:       Math.max(0, item.price - discountPerUnit),
+      }),
 
-          }),
+    });
 
-        }).then((r) => r.json())
-
-      )
-
-    );
+    const result = await res.json();
 
 
  
 
-    const results = await Promise.allSettled(reqs);
-
-
- 
-
-    const unauth = results.find(
-
-      (r) => r.status === 'fulfilled' && (r.value as { error?: string }).error === 'Unauthorized'
-
-    );
-
-    if (unauth) {
+    if (result.error === 'Unauthorized') {
 
       closeCart();
 
@@ -345,18 +358,9 @@ export default function CartDrawer() {
 
     }
 
+    if (result.error) {
 
- 
-
-    const failed = results.filter(
-
-      (r) => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as { error?: string }).error)
-
-    );
-
-    if (failed.length > 0) {
-
-      setError('Some orders could not be placed. Please try again.');
+      setError(result.error);
 
       setPlacing(false);
 
@@ -381,13 +385,6 @@ export default function CartDrawer() {
  
 
   if (!isCartOpen) return null;
-
-
- 
-
-  const missingPhone   = !phone && !phoneInput.trim();
-
-  const missingAddress = !addressId;
 
 
  
@@ -469,61 +466,6 @@ export default function CartDrawer() {
             {/* Scrollable content */}
 
             <div className="flex-1 overflow-y-auto px-6 py-4">
-
-
- 
-
-              {/* ── Phone number ───────────────────────────── */}
-
-              <div className="mb-5 rounded-[14px] p-4"
-
-                style={{
-
-                  background: phone ? 'rgba(22,160,133,.05)' : 'rgba(216,177,90,.06)',
-
-                  border: `1px solid ${phone ? 'rgba(22,160,133,.2)' : 'rgba(216,177,90,.3)'}`,
-
-                }}>
-
-                <div className="flex items-center gap-2 mb-2">
-
-                  <Phone size={13} strokeWidth={1.5} style={{ color: phone ? '#16a34a' : '#D8B15A' }} />
-
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.08em]"
-
-                    style={{ color: phone ? '#16a34a' : '#b98a3d' }}>
-
-                    {phone ? 'Contact Number' : 'Phone Required *'}
-
-                  </span>
-
-                </div>
-
-                {phone ? (
-
-                  <p className="text-[14px] font-medium" style={{ color: '#162019' }}>{phone}</p>
-
-                ) : (
-
-                  <input
-
-                    type="tel"
-
-                    value={phoneInput}
-
-                    onChange={(e) => setPhoneInput(e.target.value)}
-
-                    placeholder="+971 50 000 0000"
-
-                    className="w-full rounded-[10px] px-4 py-2.5 text-[14px]"
-
-                    style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
-
-                  />
-
-                )}
-
-              </div>
 
 
  
@@ -619,53 +561,162 @@ export default function CartDrawer() {
 
  
 
-              {/* ── Phone number ───────────────────────── */}
+              {/* ── Contact (name + phone) ──────────────── */}
 
               <div className="mb-4 rounded-[14px] p-4"
 
                 style={{
 
-                  background: phone ? 'rgba(22,160,133,.05)' : 'rgba(216,177,90,.06)',
+                  background: (name && phone) ? 'rgba(22,32,25,.04)' : 'rgba(216,177,90,.06)',
 
-                  border: `1px solid ${phone ? 'rgba(22,160,133,.2)' : 'rgba(216,177,90,.3)'}`,
+                  border: `1px solid ${(name && phone) ? 'rgba(22,32,25,.1)' : 'rgba(216,177,90,.3)'}`,
 
                 }}>
 
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center justify-between mb-3">
 
-                  <Phone size={13} strokeWidth={1.5} style={{ color: phone ? '#16a34a' : '#D8B15A' }} />
+                  <div className="flex items-center gap-2">
 
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.08em]"
+                    <Phone size={13} strokeWidth={1.5} style={{ color: (name && phone) ? '#4B5A50' : '#D8B15A' }} />
 
-                    style={{ color: phone ? '#16a34a' : '#b98a3d' }}>
+                    <span className="text-[12px] font-semibold uppercase tracking-[0.08em]"
 
-                    {phone ? 'Contact Number' : 'Phone Required *'}
+                      style={{ color: (name && phone) ? '#4B5A50' : '#b98a3d' }}>
 
-                  </span>
+                      {(name && phone) ? 'Contact' : 'Contact Required *'}
+
+                    </span>
+
+                  </div>
+
+                  {(name || phone) && !editingContact && (
+
+                    <button
+
+                      onClick={() => { setNameInput(name); setPhoneInput(phone); setEditingContact(true); }}
+
+                      className="text-[11px] font-medium"
+
+                      style={{ color: '#D8B15A' }}>
+
+                      Edit
+
+                    </button>
+
+                  )}
 
                 </div>
 
-                {phone ? (
 
-                  <p className="text-[14px] font-medium" style={{ color: '#162019' }}>{phone}</p>
+ 
+
+                {(name || phone) && !editingContact ? (
+
+                  <div className="flex flex-col gap-0.5">
+
+                    {name  && <p className="text-[14px] font-medium" style={{ color: '#162019' }}>{name}</p>}
+
+                    {phone && <p className="text-[13px]" style={{ color: '#4B5A50' }}>{phone}</p>}
+
+                  </div>
 
                 ) : (
 
-                  <input
+                  <div className="flex flex-col gap-2">
 
-                    type="tel"
+                    <input
 
-                    value={phoneInput}
+                      type="text"
 
-                    onChange={(e) => setPhoneInput(e.target.value)}
+                      value={nameInput}
 
-                    placeholder="+971 50 000 0000"
+                      onChange={(e) => setNameInput(e.target.value)}
 
-                    className="w-full rounded-[10px] px-4 py-2.5 text-[14px]"
+                      placeholder="Your name"
 
-                    style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+                      className="w-full rounded-[10px] px-3 py-2.5 text-[13px]"
 
-                  />
+                      style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+                    />
+
+                    <input
+
+                      type="tel"
+
+                      value={phoneInput}
+
+                      onChange={(e) => setPhoneInput(e.target.value)}
+
+                      placeholder="+971 50 000 0000"
+
+                      className="w-full rounded-[10px] px-3 py-2.5 text-[13px]"
+
+                      style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+                    />
+
+                    {editingContact && (
+
+                      <div className="flex gap-2">
+
+                        <button
+
+                          onClick={async () => {
+
+                            const patch: Record<string, string> = {};
+
+                            if (nameInput.trim())  patch.full_name = nameInput.trim();
+
+                            if (phoneInput.trim()) patch.phone     = phoneInput.trim();
+
+                            if (Object.keys(patch).length > 0) {
+
+                              await fetch('/api/profile', {
+
+                                method: 'PATCH',
+
+                                headers: { 'Content-Type': 'application/json' },
+
+                                body: JSON.stringify(patch),
+
+                              });
+
+                              if (patch.full_name) setName(patch.full_name);
+
+                              if (patch.phone)     setPhone(patch.phone);
+
+                            }
+
+                            setEditingContact(false);
+
+                          }}
+
+                          className="flex-1 rounded-[10px] py-2 text-[12px] font-semibold"
+
+                          style={{ background: '#162019', color: '#F6F2E9' }}>
+
+                          Save
+
+                        </button>
+
+                        <button
+
+                          onClick={() => setEditingContact(false)}
+
+                          className="rounded-[10px] px-4 py-2 text-[12px]"
+
+                          style={{ border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+                          Cancel
+
+                        </button>
+
+                      </div>
+
+                    )}
+
+                  </div>
 
                 )}
 
@@ -682,13 +733,13 @@ export default function CartDrawer() {
 
                   <div className="flex items-center gap-2">
 
-                    <MapPin size={13} strokeWidth={1.5} style={{ color: missingAddress ? '#D8B15A' : '#4B5A50' }} />
+                    <MapPin size={13} strokeWidth={1.5} style={{ color: !addressId ? '#D8B15A' : '#4B5A50' }} />
 
                     <label className="text-[12px] font-semibold uppercase tracking-[0.08em]"
 
-                      style={{ color: missingAddress ? '#b98a3d' : '#4B5A50' }}>
+                      style={{ color: !addressId ? '#b98a3d' : '#4B5A50' }}>
 
-                      Delivery Address {missingAddress && '*'}
+                      Delivery Address {!addressId && '*'}
 
                     </label>
 
@@ -765,6 +816,22 @@ export default function CartDrawer() {
 
                     </p>
 
+                    <select
+
+                      value={newAddrLabel}
+
+                      onChange={(e) => setNewAddrLabel(e.target.value)}
+
+                      className="rounded-[10px] px-3 py-2 text-[13px]"
+
+                      style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+                    >
+
+                      {['Home', 'Work', 'Other'].map((l) => <option key={l}>{l}</option>)}
+
+                    </select>
+
                     <input
 
                       value={newAddrLine}
@@ -779,39 +846,49 @@ export default function CartDrawer() {
 
                     />
 
-                    <div className="flex gap-2">
+                    <input
 
-                      <input
+                      value={newAddrCity}
 
-                        value={newAddrCity}
+                      onChange={(e) => setNewAddrCity(e.target.value)}
 
-                        onChange={(e) => setNewAddrCity(e.target.value)}
+                      placeholder="City / Area (e.g. Dubai Marina)"
 
-                        placeholder="City / Area (e.g. Dubai Marina)"
+                      className="w-full rounded-[10px] px-3 py-2 text-[13px]"
 
-                        className="flex-1 rounded-[10px] px-3 py-2 text-[13px]"
+                      style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
 
-                        style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+                    />
 
-                      />
+                    {/* Map pin */}
 
-                      <button
+                    <LocationPicker
 
-                        onClick={async () => { await handleSaveAddress(); setShowAddAddr(false); }}
+                      lat={newAddrLat}
 
-                        disabled={savingAddr || !newAddrLine.trim() || !newAddrCity.trim()}
+                      lng={newAddrLng}
 
-                        className="rounded-[10px] px-4 py-2 text-[12px] font-bold"
+                      onSelect={(la, lo) => { setNewAddrLat(la); setNewAddrLng(lo); }}
 
-                        style={{ background: '#162019', color: '#D8B15A' }}
+                      onClear={() => { setNewAddrLat(null); setNewAddrLng(null); }}
 
-                      >
+                    />
 
-                        {savingAddr ? '…' : 'Save'}
+                    <button
 
-                      </button>
+                      onClick={async () => { await handleSaveAddress(); setShowAddAddr(false); }}
 
-                    </div>
+                      disabled={savingAddr || !newAddrLine.trim() || !newAddrCity.trim()}
+
+                      className="rounded-[10px] px-4 py-2 text-[12px] font-bold"
+
+                      style={{ background: '#162019', color: '#D8B15A' }}
+
+                    >
+
+                      {savingAddr ? '…' : 'Save Address'}
+
+                    </button>
 
                   </div>
 
@@ -966,7 +1043,7 @@ export default function CartDrawer() {
 
                   <span style={{ color: '#4B5A50' }}>Delivery</span>
 
-                  <span style={{ color: '#162019' }}>COD</span>
+                  <span style={{ color: '#162019' }}>AED {DELIVERY_FEE}</span>
 
                 </div>
 
@@ -981,39 +1058,6 @@ export default function CartDrawer() {
                 </div>
 
               </div>
-
-
- 
-
-              {/* Requirement hints */}
-
-              {(missingPhone || missingAddress) && (
-
-                <div className="mb-3 flex flex-col gap-1">
-
-                  {missingPhone && (
-
-                    <p className="flex items-center gap-1.5 text-[12px]" style={{ color: '#b98a3d' }}>
-
-                      <Phone size={11} strokeWidth={2} /> Phone number required
-
-                    </p>
-
-                  )}
-
-                  {missingAddress && (
-
-                    <p className="flex items-center gap-1.5 text-[12px]" style={{ color: '#b98a3d' }}>
-
-                      <MapPin size={11} strokeWidth={2} /> Delivery address required
-
-                    </p>
-
-                  )}
-
-                </div>
-
-              )}
 
 
  

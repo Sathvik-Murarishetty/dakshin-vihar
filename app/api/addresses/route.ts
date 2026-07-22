@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  const { label, address_line1, address_line2, city, state, pincode, is_default } = body;
+  const { label, address_line1, address_line2, city, state, pincode, lat, lng, is_default } = body;
 
 
  
@@ -71,9 +71,25 @@ export async function POST(request: NextRequest) {
 
   const { data: address, error } = await supabase.from('addresses').insert({
 
-    customer_id: user.id, label, address_line1, address_line2, city, state, pincode,
+    customer_id:  user.id,
 
-    is_default: is_default ?? false,
+    label:        label || 'Home',
+
+    address_line1,
+
+    address_line2: address_line2 || null,
+
+    city,
+
+    state:        state || null,
+
+    pincode:      pincode || null,
+
+    lat:          lat ?? null,
+
+    lng:          lng ?? null,
+
+    is_default:   is_default ?? false,
 
   }).select().single();
 

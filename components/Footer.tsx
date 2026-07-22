@@ -8,15 +8,30 @@ import Link from 'next/link';
 
  
 
-const LINKS = [
+const NAV_LINKS = [
 
-  { label: 'Menu',        href: '/our-menu' },
+  { label: 'Our Menu',    href: '/our-menu'  },
+
+  { label: "Today's Menu",href: '/menu'      },
 
   { label: 'Meal Plans',  href: '/subscribe' },
 
-  { label: 'Order Now',   href: '/order' },
+  { label: 'Order Now',   href: '/order'     },
 
-  { label: 'My Account',  href: '/account' },
+  { label: 'My Account',  href: '/account'   },
+
+];
+
+
+ 
+
+const CONTACT = [
+
+  { label: 'Phone',     value: '+971 50 000 0000',           href: 'tel:+971500000000' },
+
+  { label: 'WhatsApp',  value: 'Chat on WhatsApp',           href: 'https://wa.me/971500000000' },
+
+  { label: 'Email',     value: 'hello@dakshinvihar.com',     href: 'mailto:hello@dakshinvihar.com' },
 
 ];
 
@@ -33,13 +48,15 @@ export default function Footer() {
 
         <div
 
-          className="flex flex-col gap-12 py-16 md:flex-row md:items-start md:justify-between"
+          className="grid gap-12 py-16 md:grid-cols-3"
 
           style={{ borderBottom: '1px solid rgba(216,177,90,.1)' }}
 
         >
 
-          <div className="max-w-xs">
+          {/* Brand */}
+
+          <div>
 
             <Link href="/" className="inline-block">
 
@@ -55,18 +72,28 @@ export default function Footer() {
 
             <p className="mt-5 text-[14px] leading-relaxed" style={{ color: 'rgba(246,242,233,.45)' }}>
 
-              Authentic South Indian cuisine crafted daily with heritage recipes and premium ingredients. Delivered fresh in Dubai.
+              Authentic South Indian cuisine crafted daily with heritage recipes. Fresh meals delivered across Dubai.
 
             </p>
+
+            <p className="mt-4 text-[13px]" style={{ color: 'rgba(246,242,233,.3)' }}>Dubai, UAE</p>
 
           </div>
 
 
  
 
+          {/* Navigation */}
+
           <nav aria-label="Footer navigation" className="flex flex-col gap-3">
 
-            {LINKS.map((link) => (
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'rgba(216,177,90,.5)' }}>
+
+              Quick Links
+
+            </p>
+
+            {NAV_LINKS.map((link) => (
 
               <Link
 
@@ -91,6 +118,59 @@ export default function Footer() {
             ))}
 
           </nav>
+
+
+ 
+
+          {/* Contact */}
+
+          <div className="flex flex-col gap-3">
+
+            <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.15em]" style={{ color: 'rgba(216,177,90,.5)' }}>
+
+              Contact
+
+            </p>
+
+            {CONTACT.map(({ label, value, href }) => (
+
+              <a
+
+                key={label}
+
+                href={href}
+
+                target={href.startsWith('http') ? '_blank' : undefined}
+
+                rel={href.startsWith('http') ? 'noopener noreferrer' : undefined}
+
+                className="flex flex-col gap-0.5 transition-colors duration-200"
+
+                onMouseEnter={(e) => { const el = e.currentTarget as HTMLElement; el.querySelectorAll('span').forEach((s) => { s.style.color = '#D8B15A'; }); }}
+
+                onMouseLeave={(e) => { const el = e.currentTarget as HTMLElement; el.querySelectorAll('span').forEach((s, i) => { s.style.color = i === 0 ? 'rgba(246,242,233,.3)' : 'rgba(246,242,233,.55)'; }); }}
+
+              >
+
+                <span className="text-[11px] font-medium uppercase tracking-[0.1em]" style={{ color: 'rgba(246,242,233,.3)' }}>{label}</span>
+
+                <span className="text-[14px]" style={{ color: 'rgba(246,242,233,.55)' }}>{value}</span>
+
+              </a>
+
+            ))}
+
+            {/* COD badge */}
+
+            <div className="mt-2 inline-flex items-center gap-2 self-start rounded-full px-3 py-1.5"
+
+              style={{ background: 'rgba(216,177,90,.08)', border: '1px solid rgba(216,177,90,.15)' }}>
+
+              <span className="text-[11px] font-medium" style={{ color: 'rgba(216,177,90,.7)' }}>Cash on Delivery · AED 3 delivery fee</span>
+
+            </div>
+
+          </div>
 
         </div>
 
