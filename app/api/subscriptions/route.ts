@@ -40,9 +40,11 @@ export async function POST(request: NextRequest) {
 
  
 
-    // Update profile with latest contact info (only existing columns)
+    // Update profile with latest contact info
 
-    await supabase.from('profiles').update({ full_name: name, phone }).eq('id', user.id);
+    const { error: profileError } = await supabase.from('profiles').update({ full_name: name, phone }).eq('id', user.id);
+
+    if (profileError) console.error('[subscriptions] profile update error:', profileError);
 
 
  
