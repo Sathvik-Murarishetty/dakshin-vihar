@@ -36,7 +36,7 @@ export async function createServerSupabaseClient() {
 
         getAll() { return cookieStore.getAll(); },
 
-        setAll(cookiesToSet, _cacheHeaders) {
+        setAll(cookiesToSet) {
 
           try {
 
@@ -50,7 +50,7 @@ export async function createServerSupabaseClient() {
 
             // Called from a Server Component — safe to ignore;
 
-            // proxy.ts handles cookie writes and cache headers on every request.
+            // proxy.ts handles cookie writes on every request.
 
           }
 

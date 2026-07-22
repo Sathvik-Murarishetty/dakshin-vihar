@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
 
  
 
-        setAll(cookiesToSet, cacheHeaders) {
+        setAll(cookiesToSet) {
 
           cookiesToSet.forEach(({ name, value }) =>
 
@@ -61,17 +61,6 @@ export async function proxy(request: NextRequest) {
 
           );
 
-
- 
-
-          // Prevent cached authenticated responses.
-
-          Object.entries(cacheHeaders).forEach(([key, value]) =>
-
-            supabaseResponse.headers.set(key, value)
-
-          );
-
         },
 
       },
@@ -83,25 +72,11 @@ export async function proxy(request: NextRequest) {
 
  
 
-  // Validate JWT locally using cached JWKS.
+  // Validate session — getUser() works with all @supabase/ssr versions.
 
-  const { data, error } = await supabase.auth.getClaims();
+  const { data: { user } } = await supabase.auth.getUser();
 
-
- 
-
-  if (error) {
-
-    console.error('Supabase auth error:', error);
-
-  }
-
-
- 
-
-  // User is authenticated if the JWT contains a subject.
-
-  const userId = data?.claims?.sub ?? null;
+  const userId = user?.id ?? null;
 
 
  
