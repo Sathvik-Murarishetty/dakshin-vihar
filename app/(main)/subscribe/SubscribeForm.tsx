@@ -5,7 +5,11 @@
 
 import { useState, useEffect } from 'react';
 
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
+
+import type { Address } from '@/types';
+
+import LocationPicker from '@/components/LocationPicker';
 
 
  
@@ -52,7 +56,7 @@ const SS_KEY = 'dv_subscribe_draft';
 
 interface Props {
 
-  profile: { full_name?: string | null; email?: string | null; phone?: string | null; address_line1?: string | null; city?: string | null } | null;
+  profile: { full_name?: string | null; email?: string | null; phone?: string | null } | null;
 
 }
 
@@ -61,7 +65,7 @@ interface Props {
 
 export default function SubscribeForm({ profile }: Props) {
 
-  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
 
   const [planId,    setPlanId]    = useState('plan_lunch');
 
@@ -73,10 +77,6 @@ export default function SubscribeForm({ profile }: Props) {
 
   const [phone,    setPhone]    = useState(profile?.phone ?? '');
 
-  const [address,  setAddress]  = useState(profile?.address_line1 ?? '');
-
-  const [city,     setCity]     = useState(profile?.city ?? '');
-
   const [notes,    setNotes]    = useState('');
 
   const [loading,  setLoading]  = useState(false);
@@ -84,6 +84,79 @@ export default function SubscribeForm({ profile }: Props) {
   const [error,    setError]    = useState<string | null>(null);
 
   const [success,  setSuccess]  = useState(false);
+
+  // Address (only used when authenticated)
+
+  const [addresses,     setAddresses]     = useState<Address[]>([]);
+
+  const [addressId,     setAddressId]     = useState('');
+
+  const [showAddAddr,   setShowAddAddr]   = useState(false);
+
+  const [newAddrLabel,  setNewAddrLabel]  = useState('Home');
+
+  const [newAddrLine,   setNewAddrLine]   = useState('');
+
+  const [newAddrCity,   setNewAddrCity]   = useState('');
+
+  const [newAddrLat,    setNewAddrLat]    = useState<number | null>(null);
+
+  const [newAddrLng,    setNewAddrLng]    = useState<number | null>(null);
+
+  const [savingAddr,    setSavingAddr]    = useState(false);
+
+
+ 
+
+  // Fetch profile + addresses when user is authenticated.
+
+  // Client-side fetch ensures fresh data after login redirect,
+
+  // even if the server-rendered profile prop was empty.
+
+  useEffect(() => {
+
+    if (!user) return;
+
+
+ 
+
+    fetch('/api/profile')
+
+      .then((r) => r.json())
+
+      .then(({ profile: p }) => {
+
+        if (p?.full_name) setName(p.full_name);
+
+        if (p?.phone)     setPhone(p.phone);
+
+      })
+
+      .catch(() => {});
+
+
+ 
+
+    fetch('/api/addresses')
+
+      .then((r) => r.json())
+
+      .then(({ addresses: list }) => {
+
+        const al: Address[] = list ?? [];
+
+        setAddresses(al);
+
+        const def = al.find((a) => a.is_default);
+
+        if (def) setAddressId(def.id);
+
+      })
+
+      .catch(() => {});
+
+  }, [user?.id]);
 
 
  
@@ -110,10 +183,6 @@ export default function SubscribeForm({ profile }: Props) {
 
         if (d.phone)    setPhone(d.phone);
 
-        if (d.address)  setAddress(d.address);
-
-        if (d.city)     setCity(d.city);
-
         if (d.notes)    setNotes(d.notes);
 
         sessionStorage.removeItem(SS_KEY);
@@ -138,53 +207,61 @@ export default function SubscribeForm({ profile }: Props) {
 
  
 
-    const res = await fetch('/api/subscriptions', {
+    try {
 
-      method: 'POST',
+      const res = await fetch('/api/subscriptions', {
 
-      headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
 
-      body: JSON.stringify({ planId, dietType, packaging, notes, name, phone, address, city }),
+        headers: { 'Content-Type': 'application/json' },
 
-    });
+        body: JSON.stringify({ planId, dietType, packaging, notes, name, phone, deliveryAddressId: addressId || null }),
 
-    const data = await res.json();
+      });
+
+      const data = await res.json();
 
 
  
 
-    if (data.error) {
+      if (data.error) {
 
-      // Not logged in — save form state so it survives the login round-trip
+        // Not logged in — save form state so it survives the login round-trip
 
-      if (res.status === 401) {
+        if (res.status === 401) {
 
-        try {
+          try {
 
-          sessionStorage.setItem(SS_KEY, JSON.stringify({ planId, dietType, name, phone, address, city, notes }));
+            sessionStorage.setItem(SS_KEY, JSON.stringify({ planId, dietType, packaging, name, phone, notes }));
 
-        } catch { /* ignore */ }
+          } catch { /* ignore */ }
 
-        router.push('/login?redirect=/subscribe');
+          window.location.href = `/login?redirect=${encodeURIComponent('/subscribe')}`;
+
+          return;
+
+        }
+
+        setError(data.error);
 
         return;
 
       }
 
-      setError(data.error);
-
-      setLoading(false);
-
-      return;
-
-    }
-
 
  
 
-    setSuccess(true);
+      setSuccess(true);
 
-    setLoading(false);
+    } catch (err) {
+
+      setError(err instanceof Error ? err.message : 'Network error. Please try again.');
+
+    } finally {
+
+      setLoading(false);
+
+    }
 
   }
 
@@ -219,6 +296,26 @@ export default function SubscribeForm({ profile }: Props) {
   return (
 
     <form onSubmit={handleSubmit} className="flex flex-col gap-8">
+
+
+ 
+
+      {/* Error banner — shown at top so it's always visible */}
+
+      {error && (
+
+        <p className="rounded-[12px] px-4 py-3 text-[13px] font-medium"
+
+          style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a', border: '1px solid rgba(185,58,58,.15)' }}>
+
+          {error}
+
+        </p>
+
+      )}
+
+
+ 
 
       {/* Diet */}
 
@@ -389,50 +486,6 @@ export default function SubscribeForm({ profile }: Props) {
       </div>
 
 
- 
-
-      {/* Contact */}
-
-      <div className="grid gap-4 sm:grid-cols-2">
-
-        {[
-
-          { label: 'Full Name *',   val: name,    set: setName,    type: 'text',  req: true },
-
-          { label: 'Phone *',       val: phone,   set: setPhone,   type: 'tel',   req: true },
-
-          { label: 'Address *',     val: address, set: setAddress, type: 'text',  req: true },
-
-          { label: 'City / Area *', val: city,    set: setCity,    type: 'text',  req: true },
-
-        ].map(({ label, val, set, type, req }) => (
-
-          <div key={label} className="flex flex-col gap-1.5">
-
-            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>{label}</label>
-
-            <input
-
-              type={type}
-
-              value={val}
-
-              onChange={(e) => set(e.target.value)}
-
-              required={req}
-
-              className="rounded-[12px] px-4 py-3 text-[14px]"
-
-              style={{ border: '1px solid rgba(22,32,25,.15)', background: '#FCFBF8', color: '#162019', outline: 'none' }}
-
-            />
-
-          </div>
-
-        ))}
-
-      </div>
-
 
  
 
@@ -461,24 +514,283 @@ export default function SubscribeForm({ profile }: Props) {
 
  
 
-      {error && (
+      {/* Auth-gated: contact + address + submit */}
 
-        <p className="rounded-[12px] px-4 py-3 text-[13px]" style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a' }}>
+      {authLoading ? (
 
-          {error}
+        <button type="button" disabled className="btn-gold w-full justify-center opacity-60">Loading…</button>
 
-        </p>
+      ) : !user ? (
 
-      )}
+        <button
+
+          type="button"
+
+          onClick={() => {
+
+            try {
+
+              sessionStorage.setItem(SS_KEY, JSON.stringify({ planId, dietType, packaging, notes }));
+
+            } catch { /* ignore */ }
+
+            window.location.href = `/login?redirect=${encodeURIComponent('/subscribe')}`;
+
+          }}
+
+          className="btn-gold w-full justify-center"
+
+        >
+
+          Sign In to Continue →
+
+        </button>
+
+      ) : (
+
+        <>
+
+          {/* Name + Phone */}
+
+          <div className="grid gap-4 sm:grid-cols-2">
+
+            {[
+
+              { label: 'Full Name', val: name,  set: setName,  type: 'text' },
+
+              { label: 'Phone',     val: phone, set: setPhone, type: 'tel'  },
+
+            ].map(({ label, val, set, type }) => (
+
+              <div key={label} className="flex flex-col gap-1.5">
+
+                <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>{label}</label>
+
+                <input
+
+                  type={type}
+
+                  value={val}
+
+                  onChange={(e) => set(e.target.value)}
+
+                  placeholder={type === 'tel' ? '+971 50 000 0000' : 'Your name'}
+
+                  className="rounded-[12px] px-4 py-3 text-[14px]"
+
+                  style={{ border: '1px solid rgba(22,32,25,.15)', background: '#FCFBF8', color: '#162019', outline: 'none' }}
+
+                />
+
+              </div>
+
+            ))}
+
+          </div>
 
 
  
 
-      <button type="submit" disabled={loading} className="btn-gold w-full justify-center">
+          {/* Delivery Address */}
 
-        {loading ? 'Submitting…' : 'Request Subscription'}
+          <div className="flex flex-col gap-3">
 
-      </button>
+            <div className="flex items-center justify-between">
+
+              <label className="text-[13px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#162019' }}>
+
+                Delivery Address
+
+              </label>
+
+              {addresses.length > 0 && (
+
+                <button type="button" onClick={() => setShowAddAddr((v) => !v)}
+
+                  className="text-[12px] font-medium" style={{ color: '#D8B15A' }}>
+
+                  {showAddAddr ? 'Cancel' : '+ New'}
+
+                </button>
+
+              )}
+
+            </div>
+
+
+ 
+
+            {addresses.length > 0 && !showAddAddr ? (
+
+              <select
+
+                value={addressId}
+
+                onChange={(e) => setAddressId(e.target.value)}
+
+                className="w-full rounded-[12px] px-4 py-3 text-[14px]"
+
+                style={{ border: '1px solid rgba(22,32,25,.15)', background: '#FCFBF8', color: '#162019', outline: 'none' }}
+
+              >
+
+                <option value="">— Select address —</option>
+
+                {addresses.map((a) => (
+
+                  <option key={a.id} value={a.id}>{a.label} — {a.address_line1}, {a.city}</option>
+
+                ))}
+
+              </select>
+
+            ) : (
+
+              <div className="flex flex-col gap-2 rounded-[12px] p-4"
+
+                style={{ border: '1px dashed rgba(216,177,90,.4)', background: 'rgba(216,177,90,.04)' }}>
+
+                <p className="text-[12px]" style={{ color: '#4B5A50' }}>
+
+                  {addresses.length === 0 ? 'No saved addresses. Add one:' : 'New address:'}
+
+                </p>
+
+                <select
+
+                  value={newAddrLabel} onChange={(e) => setNewAddrLabel(e.target.value)}
+
+                  className="rounded-[12px] px-4 py-2.5 text-[14px]"
+
+                  style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+                >
+
+                  {['Home','Work','Other'].map((l) => <option key={l}>{l}</option>)}
+
+                </select>
+
+                <input value={newAddrLine} onChange={(e) => setNewAddrLine(e.target.value)}
+
+                  placeholder="Building / Street / Area"
+
+                  className="rounded-[12px] px-4 py-2.5 text-[14px]"
+
+                  style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+                />
+
+                <input value={newAddrCity} onChange={(e) => setNewAddrCity(e.target.value)}
+
+                  placeholder="City / Area (e.g. Dubai Marina)"
+
+                  className="rounded-[12px] px-4 py-2.5 text-[14px]"
+
+                  style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+                />
+
+                <LocationPicker
+
+                  lat={newAddrLat}
+
+                  lng={newAddrLng}
+
+                  onSelect={(la, lo) => { setNewAddrLat(la); setNewAddrLng(lo); }}
+
+                  onClear={() => { setNewAddrLat(null); setNewAddrLng(null); }}
+
+                />
+
+                <button type="button"
+
+                  disabled={savingAddr || !newAddrLine.trim() || !newAddrCity.trim()}
+
+                  onClick={async () => {
+
+                    setSavingAddr(true);
+
+                    const res = await fetch('/api/addresses', {
+
+                      method: 'POST',
+
+                      headers: { 'Content-Type': 'application/json' },
+
+                      body: JSON.stringify({
+
+                        label: newAddrLabel, address_line1: newAddrLine.trim(),
+
+                        city: newAddrCity.trim(), lat: newAddrLat, lng: newAddrLng,
+
+                        is_default: addresses.length === 0,
+
+                      }),
+
+                    });
+
+                    const data = await res.json();
+
+                    if (data.address) {
+
+                      setAddresses((prev) => [data.address, ...prev]);
+
+                      setAddressId(data.address.id);
+
+                      setNewAddrLine(''); setNewAddrCity(''); setNewAddrLabel('Home');
+
+                      setNewAddrLat(null); setNewAddrLng(null);
+
+                      setShowAddAddr(false);
+
+                    }
+
+                    setSavingAddr(false);
+
+                  }}
+
+                  className="rounded-[12px] px-4 py-2.5 text-[13px] font-bold"
+
+                  style={{ background: '#162019', color: '#D8B15A' }}
+
+                >
+
+                  {savingAddr ? '…' : 'Save Address'}
+
+                </button>
+
+              </div>
+
+            )}
+
+          </div>
+
+
+ 
+
+          {error && (
+
+            <p className="rounded-[12px] px-4 py-3 text-[13px] font-medium"
+
+              style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a', border: '1px solid rgba(185,58,58,.15)' }}>
+
+              {error}
+
+            </p>
+
+          )}
+
+
+ 
+
+          <button type="submit" disabled={loading} className="btn-gold w-full justify-center">
+
+            {loading ? 'Submitting…' : 'Request Subscription'}
+
+          </button>
+
+        </>
+
+      )}
 
     </form>
 

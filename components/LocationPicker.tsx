@@ -447,7 +447,7 @@ export default function LocationPicker({ lat, lng, onSelect, onClear }: Location
 
         className="overflow-hidden rounded-[14px]"
 
-        style={{ border: '1px solid rgba(22,32,25,.12)', position: 'relative' }}
+        style={{ border: '1px solid rgba(22,32,25,.12)', position: 'relative', isolation: 'isolate' }}
 
       >
 

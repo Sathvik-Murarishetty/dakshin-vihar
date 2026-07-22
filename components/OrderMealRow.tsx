@@ -49,9 +49,13 @@ export default function OrderMealRow({ item, isLast = false }: Props) {
 
   function handleAdd() {
 
+    // No auth check here — anyone can add to cart (localStorage).
+
+    // Auth is enforced at checkout inside CartDrawer.
+
     add({
 
-      mealId:   item.id,           // stored as mealId in cart (itemType distinguishes it)
+      mealId:   item.id,
 
       mealDate: today,
 

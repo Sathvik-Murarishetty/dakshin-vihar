@@ -20,7 +20,7 @@ export async function GET() {
 
     .from('profiles')
 
-    .select('full_name, phone, address_line1, city')
+    .select('full_name, phone')
 
     .eq('id', user.id)
 
@@ -49,7 +49,7 @@ export async function PATCH(request: NextRequest) {
 
   const body = await request.json();
 
-  const { full_name, phone, address_line1, address_line2, city, state, pincode } = body;
+  const { full_name, phone } = body;
 
 
  
@@ -58,7 +58,7 @@ export async function PATCH(request: NextRequest) {
 
     .from('profiles')
 
-    .update({ full_name, phone, address_line1, address_line2, city, state, pincode })
+    .update({ full_name, phone })
 
     .eq('id', user.id)
 

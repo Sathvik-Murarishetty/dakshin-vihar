@@ -22,7 +22,7 @@ export default async function SubscribePage() {
 
       .from('profiles')
 
-      .select('full_name, email, phone, address_line1, city')
+      .select('full_name, email, phone')
 
       .eq('id', user.id)
 

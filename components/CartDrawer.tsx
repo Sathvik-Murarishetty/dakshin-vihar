@@ -11,6 +11,10 @@ import { useCart } from '@/hooks/useCart';
 
 import { useToast } from '@/hooks/useToast';
 
+import { useAuth } from '@/hooks/useAuth';
+
+import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+
 import type { Address } from '@/types';
 
 import { X, Plus, Minus, Trash2, Tag, ChevronDown, Phone, MapPin } from 'lucide-react';
@@ -25,6 +29,10 @@ export default function CartDrawer() {
   const { items, count, increment, decrement, remove, clear, isCartOpen, closeCart } = useCart();
 
   const { showToast } = useToast();
+
+  const { user: authUser } = useAuth();
+
+  const router = useRouter();
 
   const [placing,      setPlacing]      = useState(false);
 
@@ -73,8 +81,6 @@ export default function CartDrawer() {
   const [couponError,  setCouponError]  = useState<string | null>(null);
 
   const [validating,   setValidating]   = useState(false);
-
-  const router = useRouter();
 
 
  
@@ -126,9 +132,9 @@ export default function CartDrawer() {
 
       .then(({ profile }) => {
 
-        if (profile?.phone)     setPhone(profile.phone);
+        if (profile?.phone)     { setPhone(profile.phone);     setPhoneInput(profile.phone); }
 
-        if (profile?.full_name) setName(profile.full_name);
+        if (profile?.full_name) { setName(profile.full_name);  setNameInput(profile.full_name); }
 
       })
 
@@ -244,6 +250,21 @@ export default function CartDrawer() {
 
   async function handleCheckout() {
 
+    // ── Auth guard — useAuth is reactive; no extra network call ──────
+
+    if (!authUser) {
+
+      closeCart();
+
+      router.push(`/login?redirect=${encodeURIComponent('/order?cart=open')}`);
+
+      return;
+
+    }
+
+
+ 
+
     // ── Validate contact ─────────────────────────────────
 
     const effectiveName  = name || nameInput.trim();
@@ -352,7 +373,7 @@ export default function CartDrawer() {
 
       closeCart();
 
-      router.push('/login?redirect=%2Forder%3Fcart%3Dopen');
+      router.push(`/login?redirect=${encodeURIComponent('/order?cart=open')}`);
 
       return;
 
@@ -561,6 +582,34 @@ export default function CartDrawer() {
 
  
 
+              {/* ── Sign-in prompt (non-auth) or checkout form (auth) ── */}
+
+              {!authUser ? (
+
+                <div className="flex flex-col items-center gap-3 rounded-[16px] py-6 text-center"
+
+                  style={{ background: 'rgba(216,177,90,.06)', border: '1px solid rgba(216,177,90,.25)' }}>
+
+                  <p className="text-[15px] font-semibold" style={{ color: '#162019' }}>Sign in to place your order</p>
+
+                  <p className="text-[13px]" style={{ color: '#4B5A50' }}>Your cart is saved — sign in to continue.</p>
+
+                  <button
+
+                    onClick={() => { closeCart(); router.push(`/login?redirect=${encodeURIComponent('/order?cart=open')}`); }}
+
+                    className="btn-gold mt-1">
+
+                    Sign In →
+
+                  </button>
+
+                </div>
+
+              ) : (
+
+                <>
+
               {/* ── Contact (name + phone) ──────────────── */}
 
               <div className="mb-4 rounded-[14px] p-4"
@@ -589,7 +638,7 @@ export default function CartDrawer() {
 
                   </div>
 
-                  {(name || phone) && !editingContact && (
+                  {(name && phone) && !editingContact && (
 
                     <button
 
@@ -610,7 +659,7 @@ export default function CartDrawer() {
 
  
 
-                {(name || phone) && !editingContact ? (
+                {(name && phone) && !editingContact ? (
 
                   <div className="flex flex-col gap-0.5">
 
@@ -1008,6 +1057,10 @@ export default function CartDrawer() {
 
               </div>
 
+              </>
+
+            )}
+
             </div>
 
 
@@ -1077,19 +1130,37 @@ export default function CartDrawer() {
 
  
 
-              <button
+              {authUser ? (
 
-                onClick={handleCheckout}
+                <button
 
-                disabled={placing}
+                  onClick={handleCheckout}
 
-                className="btn-gold w-full justify-center"
+                  disabled={placing}
 
-              >
+                  className="btn-gold w-full justify-center"
 
-                {placing ? 'Placing Order…' : 'Place Order (COD)'}
+                >
 
-              </button>
+                  {placing ? 'Placing Order…' : 'Place Order (COD)'}
+
+                </button>
+
+              ) : (
+
+                <button
+
+                  onClick={() => { closeCart(); router.push(`/login?redirect=${encodeURIComponent('/order?cart=open')}`); }}
+
+                  className="btn-gold w-full justify-center"
+
+                >
+
+                  Sign In to Order →
+
+                </button>
+
+              )}
 
               <p className="mt-3 text-center text-[11px]" style={{ color: 'rgba(22,32,25,.35)' }}>
 

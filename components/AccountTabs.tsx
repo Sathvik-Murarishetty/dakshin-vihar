@@ -52,7 +52,7 @@ interface Sub       { id: string; plan: Plan | null; status: string; diet_type: 
 
 interface OrderItem { id: string; quantity: number; unit_price: number; subtotal: number; menu_item: { name?: string } | null; meal: { name?: string; meal_slot?: string } | null }
 
-interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; discount_amount: number; status: string; notes: string | null; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
+interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
 
 interface Profile   { full_name?: string | null; email?: string; phone?: string | null }
 
@@ -850,6 +850,14 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
                             </div>
 
                           )}
+
+                          <div className="flex justify-between text-[13px]">
+
+                            <span style={{ color: '#4B5A50' }}>Delivery</span>
+
+                            <span style={{ color: '#4B5A50' }}>AED {order.delivery_fee ?? 3}</span>
+
+                          </div>
 
                           <div className="flex justify-between font-bold text-[14px] pt-1"
 
