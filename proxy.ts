@@ -113,11 +113,7 @@ export async function proxy(request: NextRequest) {
 
   const customerProtected =
 
-    pathname.startsWith('/account') ||
-
-    pathname.startsWith('/order') ||
-
-    pathname.startsWith('/subscribe');
+    pathname.startsWith('/account');
 
 
  

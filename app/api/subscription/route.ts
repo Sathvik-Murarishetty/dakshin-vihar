@@ -18,18 +18,20 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  const { planId, dietType, notes, name, phone, address, city } = body;
+  const { planId, dietType, packaging, notes, name, phone, address, city } = body;
 
 
  
 
-  const VALID_PLANS = ['plan_lunch', 'plan_dinner', 'plan_both'];
+  const VALID_PLANS    = ['plan_lunch', 'plan_dinner', 'plan_both'];
+
+  const VALID_DIETS    = ['veg', 'non-veg', 'both'];
+
+  const VALID_PACK     = ['normal', 'microwave'];
 
   if (!planId || !dietType) return NextResponse.json({ error: 'planId and dietType are required' }, { status: 400 });
 
   if (!VALID_PLANS.includes(planId)) return NextResponse.json({ error: 'Invalid plan.' }, { status: 400 });
-
-  const VALID_DIETS = ['veg', 'non-veg', 'both'];
 
   if (!VALID_DIETS.includes(dietType)) return NextResponse.json({ error: 'Invalid diet type.' }, { status: 400 });
 
@@ -50,6 +52,8 @@ export async function POST(request: NextRequest) {
     plan_id:              planId,
 
     diet_type:            dietType,
+
+    packaging:            VALID_PACK.includes(packaging) ? packaging : 'normal',
 
     meal_slot_preference: planId === 'plan_lunch' ? 'lunch' : planId === 'plan_dinner' ? 'dinner' : 'both',
 

@@ -41,8 +41,6 @@ const STATUS_STYLES: Record<string, { background: string; color: string }> = {
 
   delivered:        { background: 'rgba(22,160,133,.08)', color: '#16a34a' },
 
-  canceled_order:   { background: 'rgba(185,58,58,.08)',  color: '#b93a3a' },
-
 };
 
 
@@ -695,6 +693,25 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
                 {isOpen && (
 
                   <div className="px-5 pb-5 flex flex-col gap-5" style={{ borderTop: '1px solid rgba(22,32,25,.08)' }}>
+
+
+ 
+
+                    {/* Cancellation notice */}
+
+                    {order.status === 'canceled' && (
+
+                      <div className="rounded-[14px] px-5 py-4 pt-5"
+
+                        style={{ background: 'rgba(185,58,58,.06)', border: '1px solid rgba(185,58,58,.15)' }}>
+
+                        <p className="text-[13px] font-semibold" style={{ color: '#b93a3a' }}>Order Cancelled</p>
+
+                        <p className="mt-0.5 text-[12px]" style={{ color: 'rgba(185,58,58,.7)' }}>This order has been cancelled. If you were charged, contact support.</p>
+
+                      </div>
+
+                    )}
 
 
  

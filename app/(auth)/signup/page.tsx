@@ -100,9 +100,7 @@ function SignupForm() {
 
  
 
-    router.push(redirect);
-
-    router.refresh();
+    window.location.href = redirect;
 
   }
 

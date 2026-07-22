@@ -71,9 +71,11 @@ function LoginForm() {
 
  
 
-    router.push(redirect);
+    // Hard redirect: ensures the new auth cookie is sent with the next request
 
-    router.refresh();
+    // and avoids the router.push + router.refresh() race condition.
+
+    window.location.href = redirect;
 
   }
 

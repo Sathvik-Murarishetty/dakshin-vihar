@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
 
  
@@ -196,7 +196,13 @@ export async function POST(request: NextRequest) {
 
     });
 
-    await supabase.rpc('increment_coupon_uses', { p_coupon_id: couponId });
+    // increment_coupon_uses is a SECURITY DEFINER function with execute
+
+    // revoked from anon/authenticated — must call via service role.
+
+    const serviceClient = createServiceSupabaseClient();
+
+    await serviceClient.rpc('increment_coupon_uses', { p_coupon_id: couponId });
 
   }
 
