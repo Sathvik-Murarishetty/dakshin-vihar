@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from 'react';
 
 import { redirect } from 'next/navigation';
 
-import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 import { ToastProvider } from '@/hooks/useToast';
 
@@ -24,18 +24,16 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
  
 
-  // Use service client to bypass RLS — we already verified the user is authenticated
+  // Pass user.id explicitly — avoids relying on auth.uid() inside the function
 
-  const service = createServiceSupabaseClient();
+  const { data: role } = await supabase.rpc('get_role_for_user', { p_user_id: user.id });
 
-  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single();
-
-  const role = profile?.role ?? 'customer';
+  const userRole = (role as string | null) ?? 'customer';
 
 
  
 
-  if (!ROLE_TABS[role]) redirect('/');
+  if (!ROLE_TABS[userRole]) redirect('/');
 
 
  
@@ -46,7 +44,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
       <Suspense fallback={null}>
 
-        <AdminSidebar role={role} />
+        <AdminSidebar role={userRole} />
 
       </Suspense>
 

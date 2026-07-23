@@ -201,7 +201,7 @@ export default function MenuPage() {
 
                 { key: 'both',    label: 'All' },
 
-                { key: 'veg',     label: '● Veg' },
+                { key: 'veg',     label: '🟢 Veg' },
 
                 { key: 'non-veg', label: '🔴 Non-Veg' },
 
