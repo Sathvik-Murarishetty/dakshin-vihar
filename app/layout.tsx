@@ -34,7 +34,15 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
 
-  title: 'Dakshin Vihar — Soulful South Indian',
+  metadataBase: new URL('https://dakshinvihar.com'),
+
+  title: {
+
+    default:  'Dakshin Vihar — Soulful South Indian',
+
+    template: '%s — Dakshin Vihar',
+
+  },
 
   description:
 
@@ -42,11 +50,33 @@ export const metadata: Metadata = {
 
   openGraph: {
 
-    title: 'Dakshin Vihar — Soulful South Indian',
+    title:       'Dakshin Vihar — Soulful South Indian',
 
     description: 'Subscribe to fresh, authentic South Indian meals every day.',
 
-    type: 'website',
+    type:        'website',
+
+    siteName:    'Dakshin Vihar',
+
+    locale:      'en_AE',
+
+  },
+
+  twitter: {
+
+    card:        'summary_large_image',
+
+    title:       'Dakshin Vihar — Soulful South Indian',
+
+    description: 'Fresh South Indian meals delivered daily across Dubai.',
+
+  },
+
+  robots: {
+
+    index:  true,
+
+    follow: true,
 
   },
 

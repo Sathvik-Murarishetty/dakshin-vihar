@@ -11,8 +11,6 @@ import { MapPin, Plus, Trash2, Star, Pencil, Check, X, Lock, Eye, EyeOff } from 
 
 import LocationPicker from '@/components/LocationPicker';
 
-import CancelSubscriptionButton from '@/components/CancelSubscriptionButton';
-
 import { createBrowserSupabaseClient } from '@/lib/supabase/client';
 
 
@@ -52,7 +50,7 @@ interface Sub       { id: string; plan: Plan | null; status: string; diet_type: 
 
 interface OrderItem { id: string; quantity: number; unit_price: number; subtotal: number; menu_item: { name?: string } | null; meal: { name?: string; meal_slot?: string } | null }
 
-interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
+interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; source?: string; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
 
 interface Profile   { full_name?: string | null; email?: string; phone?: string | null }
 
@@ -63,20 +61,24 @@ interface Address   { id: string; label: string; address_line1: string; address_
 
 interface Props {
 
-  initialTab:    Tab;
+  initialTab:       Tab;
 
-  subscriptions: Sub[]   | null;
+  subscriptions:    Sub[]   | null;
 
-  orders:        Order[] | null;
+  orders:           Order[] | null;
 
-  profile:       Profile | null;
+  profile:          Profile | null;
+
+  ordersPage?:      number;
+
+  ordersTotalPages?: number;
 
 }
 
 
  
 
-export default function AccountTabs({ initialTab, subscriptions, orders, profile }: Props) {
+export default function AccountTabs({ initialTab, subscriptions, orders, profile, ordersPage = 1, ordersTotalPages = 1 }: Props) {
 
   const [tab, setTab] = useState<Tab>(initialTab);
 
@@ -538,7 +540,19 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
                   </span>
 
-                  {sub.status === 'active' && <CancelSubscriptionButton subscriptionId={sub.id} />}
+                  {(sub.status === 'active' || sub.status === 'pending') && (
+
+                    <Link href="/#contact"
+
+                      className="rounded-full px-3 py-1 text-[11px] font-medium"
+
+                      style={{ border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+                      Contact to cancel
+
+                    </Link>
+
+                  )}
 
                 </div>
 
@@ -598,23 +612,32 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
           {orders?.map((order) => {
 
-            const isOpen   = expandedOrderId === order.id;
+            const isOpen        = expandedOrderId === order.id;
 
-            const allItems = order.order_items ?? [];
+            const allItems      = order.order_items ?? [];
 
-            const STATUS_STEPS = ['confirmed','preparing','out_for_delivery','delivered'] as const;
+            const isSub         = order.source === 'subscription';
 
-            const stepIdx  = STATUS_STEPS.indexOf(order.status as typeof STATUS_STEPS[number]);
+            const STATUS_STEPS  = ['confirmed','preparing','out_for_delivery','delivered'] as const;
 
-            // Summary line for mini view
+            const stepIdx       = STATUS_STEPS.indexOf(order.status as typeof STATUS_STEPS[number]);
 
-            const firstItem = allItems[0];
 
-            const itemSummary = firstItem
+ 
 
-              ? `${firstItem.menu_item?.name ?? firstItem.meal?.name ?? 'Item'}${allItems.length > 1 ? ` & ${allItems.length - 1} more` : ''}`
+            // Title: use subscription name from notes, or derive from items
 
-              : `${allItems.length} item${allItems.length !== 1 ? 's' : ''}`;
+            const firstItem   = allItems[0];
+
+            const itemSummary = isSub && order.notes
+
+              ? order.notes  // "Lunch Meal Subscription" / "Dinner Meal Subscription"
+
+              : firstItem
+
+                ? `${firstItem.menu_item?.name ?? firstItem.meal?.name ?? 'Item'}${allItems.length > 1 ? ` & ${allItems.length - 1} more` : ''}`
+
+                : `${allItems.length} item${allItems.length !== 1 ? 's' : ''}`;
 
 
  
@@ -663,11 +686,33 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
                       </span>
 
+                      {isSub && (
+
+                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
+
+                          style={{ background: 'rgba(216,177,90,.12)', color: '#b98a3d' }}>
+
+                          Plan
+
+                        </span>
+
+                      )}
+
                     </div>
 
                     <p className="text-[12px] truncate" style={{ color: '#4B5A50' }}>
 
-                      {order.meal_date} · {itemSummary} · <strong style={{ color: '#162019' }}>AED {order.final_amount}</strong>
+                      {order.meal_date} · {itemSummary}
+
+                      {isSub ? (
+
+                        <> · <strong style={{ color: '#16a34a' }}>Covered by plan</strong></>
+
+                      ) : (
+
+                        <> · <strong style={{ color: '#162019' }}>AED {order.final_amount}</strong></>
+
+                      )}
 
                     </p>
 
@@ -946,6 +991,37 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
             );
 
           })}
+
+
+ 
+
+          {/* Orders pagination */}
+
+          {ordersTotalPages > 1 && (
+
+            <div className="mt-4 flex justify-center gap-2 flex-wrap">
+
+              {Array.from({ length: ordersTotalPages }, (_, i) => i + 1).map((p) => (
+
+                <a key={p} href={`/account?tab=orders&ordersPage=${p}`}
+
+                  className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium"
+
+                  style={p === ordersPage
+
+                    ? { background: '#162019', color: '#F6F2E9' }
+
+                    : { border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+                  {p}
+
+                </a>
+
+              ))}
+
+            </div>
+
+          )}
 
         </div>
 

@@ -5,6 +5,8 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 
+import { createBrowserSupabaseClient } from '@/lib/supabase/client';
+
 
  
 
@@ -78,6 +80,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
  
 
+  // Hydrate from localStorage on mount
+
   useEffect(() => {
 
     try {
@@ -95,6 +99,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
  
 
+  // Persist to localStorage whenever cart changes
+
   useEffect(() => {
 
     if (!hydrated) return;
@@ -102,6 +108,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(KEY, JSON.stringify(items));
 
   }, [items, hydrated]);
+
+
+ 
+
+  // Clear cart on sign-out so stale items don't persist across accounts
+
+  useEffect(() => {
+
+    const supabase = createBrowserSupabaseClient();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+
+      if (event === 'SIGNED_OUT') {
+
+        setItems([]);
+
+        try { localStorage.removeItem(KEY); } catch { /* ignore */ }
+
+      }
+
+    });
+
+    return () => subscription.unsubscribe();
+
+  }, []);
 
 
  

@@ -14,7 +14,7 @@ const NAV_LINKS = [
 
   { label: "Today's Menu",href: '/menu'      },
 
-  { label: 'Meal Plans',  href: '/subscribe' },
+  { label: 'Meals Subscription',  href: '/subscribe' },
 
   { label: 'Order Now',   href: '/order'     },
 
@@ -185,7 +185,35 @@ export default function Footer() {
 
           </p>
 
-          <p className="text-[12px]" style={{ color: 'rgba(246,242,233,.2)' }}>Dubai, UAE</p>
+          <div className="flex items-center gap-4">
+
+            <Link href="/terms" className="text-[12px] transition-colors duration-150"
+
+              style={{ color: 'rgba(246,242,233,.28)' }}
+
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#D8B15A'; }}
+
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(246,242,233,.28)'; }}>
+
+              Terms
+
+            </Link>
+
+            <Link href="/privacy" className="text-[12px] transition-colors duration-150"
+
+              style={{ color: 'rgba(246,242,233,.28)' }}
+
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#D8B15A'; }}
+
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = 'rgba(246,242,233,.28)'; }}>
+
+              Privacy
+
+            </Link>
+
+            <p className="text-[12px]" style={{ color: 'rgba(246,242,233,.2)' }}>Dubai, UAE</p>
+
+          </div>
 
         </div>
 

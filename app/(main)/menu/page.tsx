@@ -29,28 +29,6 @@ function VegBadge({ isVeg }: { isVeg: boolean }) {
 
     <div className="flex items-center gap-1.5">
 
-      {isVeg ? (
-
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-
-          <rect x="1.5" y="1.5" width="13" height="13" rx="1.5" stroke="#16a34a" strokeWidth="1.5"/>
-
-          <circle cx="8" cy="8" r="4" fill="#16a34a"/>
-
-        </svg>
-
-      ) : (
-
-        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-
-          <rect x="1.5" y="1.5" width="13" height="13" rx="1.5" stroke="#b45309" strokeWidth="1.5"/>
-
-          <polygon points="8,4 13,12 3,12" fill="#b45309"/>
-
-        </svg>
-
-      )}
-
       <span className="text-[12px] font-semibold" style={{ color: isVeg ? '#16a34a' : '#b45309' }}>
 
         {isVeg ? 'Veg' : 'Non-Veg'}
@@ -278,7 +256,7 @@ export default function MenuPage() {
 
           <p className="text-[13px] font-semibold" style={{ color: '#162019' }}>Want these meals delivered every day?</p>
 
-          <p className="text-[12px]" style={{ color: '#4B5A50' }}>From AED 1,499/mo · cancel anytime</p>
+          <p className="text-[12px]" style={{ color: '#4B5A50' }}>From AED 250/mo · cancel anytime</p>
 
         </div>
 
@@ -436,7 +414,7 @@ export default function MenuPage() {
 
             <p className="mt-1.5 text-[14px]" style={{ color: 'rgba(246,242,233,.5)' }}>
 
-              Subscribe monthly — lunch, dinner, or both. Fresh, delivered, from AED 1,499/mo.
+              Subscribe monthly — lunch, dinner, or both. Fresh, delivered, from AED 250/mo.
 
             </p>
 

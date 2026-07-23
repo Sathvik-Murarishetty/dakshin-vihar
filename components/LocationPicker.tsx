@@ -445,7 +445,7 @@ export default function LocationPicker({ lat, lng, onSelect, onClear }: Location
 
       <div
 
-        className="overflow-hidden rounded-[14px]"
+        className="w-full overflow-hidden rounded-[14px]"
 
         style={{ border: '1px solid rgba(22,32,25,.12)', position: 'relative', isolation: 'isolate' }}
 
@@ -471,7 +471,7 @@ export default function LocationPicker({ lat, lng, onSelect, onClear }: Location
 
           ref={containerRef}
 
-          style={{ height: 260, display: ready ? 'block' : 'none' }}
+          style={{ height: 260, width: '100%', display: ready ? 'block' : 'none' }}
 
           aria-label="Delivery location map"
 

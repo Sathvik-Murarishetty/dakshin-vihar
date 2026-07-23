@@ -58,7 +58,7 @@ export interface Profile {
 
   full_name: string | null;
 
-  role: 'customer' | 'admin' | 'kitchen' | 'driver';
+  role: 'customer' | 'admin' | 'kitchen' | 'driver' | 'manager' | 'cook' | 'staff';
 
   phone: string | null;
 
@@ -109,6 +109,8 @@ export interface Subscription {
   diet_type: 'veg' | 'non-veg' | 'both';
 
   meal_slot_preference: 'lunch' | 'dinner' | 'both';
+
+  packaging: 'normal' | 'microwave';
 
   notes: string | null;
 
@@ -218,11 +220,19 @@ export interface Order {
 
   subtotal: number;
 
+  delivery_fee: number;
+
   discount_amount: number;
 
   final_amount: number;
 
   notes: string | null;
+
+  source: 'manual' | 'subscription';
+
+  subscription_id: string | null;
+
+  meal_slot: 'lunch' | 'dinner' | null;
 
   created_at: string;
 

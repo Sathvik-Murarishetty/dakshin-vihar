@@ -298,107 +298,136 @@ export default function CartDrawer() {
 
  
 
-    // Save contact info to profile if newly entered
+    try {
 
-    const patchData: Record<string, string> = {};
+      // ── Store open check ─────────────────────────────
 
-    if (!phone && phoneInput.trim()) patchData.phone     = phoneInput.trim();
+      const storeRes  = await fetch('/api/store');
 
-    if (!name  && nameInput.trim())  patchData.full_name = nameInput.trim();
+      const storeData = await storeRes.json();
 
-    if (Object.keys(patchData).length > 0) {
+      if (!storeData.is_open) {
 
-      await fetch('/api/profile', {
+        setError(storeData.closed_message ?? 'The store is currently closed. Please try again later.');
 
-        method: 'PATCH',
+        setPlacing(false);
+
+        return;
+
+      }
+
+
+ 
+
+      // Save contact info to profile if newly entered
+
+      const patchData: Record<string, string> = {};
+
+      if (!phone && phoneInput.trim()) patchData.phone     = phoneInput.trim();
+
+      if (!name  && nameInput.trim())  patchData.full_name = nameInput.trim();
+
+      if (Object.keys(patchData).length > 0) {
+
+        await fetch('/api/profile', {
+
+          method: 'PATCH',
+
+          headers: { 'Content-Type': 'application/json' },
+
+          body: JSON.stringify(patchData),
+
+        });
+
+        if (patchData.phone)     setPhone(patchData.phone);
+
+        if (patchData.full_name) setName(patchData.full_name);
+
+      }
+
+
+ 
+
+      const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+
+
+ 
+
+      // Single request — one order basket with all items
+
+      const res = await fetch('/api/orders', {
+
+        method: 'POST',
 
         headers: { 'Content-Type': 'application/json' },
 
-        body: JSON.stringify(patchData),
+        body: JSON.stringify({
+
+          items: items.map((item) => ({
+
+            ...(item.itemType === 'menu_item' ? { menuItemId: item.mealId } : { mealId: item.mealId }),
+
+            quantity: item.quantity,
+
+          })),
+
+          mealDate:          items[0]?.mealDate ?? new Date().toISOString().slice(0, 10),
+
+          notes:             notes.trim() || null,
+
+          deliveryAddressId: addressId,
+
+          couponId:          couponData?.couponId || null,
+
+          discountAmount:    discount,
+
+        }),
 
       });
 
-      if (patchData.phone)     setPhone(patchData.phone);
-
-      if (patchData.full_name) setName(patchData.full_name);
-
-    }
+      const result = await res.json();
 
 
  
 
-    const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+      if (result.error === 'Unauthorized') {
+
+        closeCart();
+
+        router.push(`/login?redirect=${encodeURIComponent('/order?cart=open')}`);
+
+        return;
+
+      }
+
+      if (result.error) {
+
+        setError(result.error);
+
+        return;
+
+      }
 
 
  
 
-    // Single request — one order basket with all items
-
-    const res = await fetch('/api/orders', {
-
-      method: 'POST',
-
-      headers: { 'Content-Type': 'application/json' },
-
-      body: JSON.stringify({
-
-        items: items.map((item) => ({
-
-          ...(item.itemType === 'menu_item' ? { menuItemId: item.mealId } : { mealId: item.mealId }),
-
-          quantity: item.quantity,
-
-        })),
-
-        mealDate:          items[0]?.mealDate ?? new Date().toISOString().slice(0, 10),
-
-        notes:             notes.trim() || null,
-
-        deliveryAddressId: addressId,
-
-        couponId:          couponData?.couponId || null,
-
-        discountAmount:    discount,
-
-      }),
-
-    });
-
-    const result = await res.json();
-
-
- 
-
-    if (result.error === 'Unauthorized') {
+      clear();
 
       closeCart();
 
-      router.push(`/login?redirect=${encodeURIComponent('/order?cart=open')}`);
+      showToast(`${totalUnits} item${totalUnits > 1 ? 's' : ''} ordered! We\'ll deliver soon.`);
 
-      return;
+      router.push('/account?tab=orders');
 
-    }
+    } catch {
 
-    if (result.error) {
+      setError('Network error. Please try again.');
 
-      setError(result.error);
+    } finally {
 
       setPlacing(false);
 
-      return;
-
     }
-
-
- 
-
-    clear();
-
-    closeCart();
-
-    showToast(`${totalUnits} item${totalUnits > 1 ? 's' : ''} ordered! We'll deliver soon.`);
-
-    router.push('/account?tab=orders');
 
   }
 

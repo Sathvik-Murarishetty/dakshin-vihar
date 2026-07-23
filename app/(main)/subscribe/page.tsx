@@ -1,6 +1,29 @@
+import type { Metadata } from 'next';
+
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 import SubscribeForm from './SubscribeForm';
+
+
+ 
+
+export const metadata: Metadata = {
+
+  title: 'Meal Plans — Dakshin Vihar',
+
+  description: 'Subscribe to fresh South Indian meals delivered daily across Dubai. Lunch, dinner, or both — starting AED 250/month.',
+
+  openGraph: {
+
+    title: 'Monthly Meal Plans — Dakshin Vihar',
+
+    description: 'Fresh South Indian meals delivered to your door every day. Cancel anytime.',
+
+    type: 'website',
+
+  },
+
+};
 
 
  
@@ -39,7 +62,7 @@ export default async function SubscribePage() {
 
     <div className="container-dv section-pad">
 
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto w-full max-w-2xl">
 
         <div className="mb-12 text-center">
 

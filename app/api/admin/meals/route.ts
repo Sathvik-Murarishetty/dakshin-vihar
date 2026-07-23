@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
+import { logAudit } from '@/lib/audit';
+
 
  
 
@@ -35,7 +37,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  const { meal_date, meal_slot, name, description, price, is_veg, is_available, tags, image_url } = body;
+  const { meal_date, meal_slot, name, description, price, is_veg, is_available, tags, image_url, items } = body;
 
 
  
@@ -54,6 +56,36 @@ export async function POST(request: NextRequest) {
  
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+
+ 
+
+  // Insert meal items if provided
+
+  if (Array.isArray(items) && items.length > 0) {
+
+    await supabase.from('meal_items').insert(
+
+      items.map((item: { name: string; is_veg: boolean }, idx: number) => ({
+
+        meal_id:    meal.id,
+
+        name:       item.name,
+
+        is_veg:     item.is_veg ?? true,
+
+        sort_order: idx,
+
+      }))
+
+    );
+
+  }
+
+
+ 
+
+  await logAudit({ action: 'create', entity: 'meal', entityId: meal.id, details: { name, meal_date, meal_slot } });
 
   return NextResponse.json({ meal }, { status: 201 });
 

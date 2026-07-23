@@ -6,7 +6,7 @@ const MENU_CATEGORIES = [
     title: 'Breakfast Classics',
     description:
       'Soft idlis, crispy dosas, medu vadas, pongal and traditional morning favourites.',
-    href: '/our-menu#breakfast',
+    href: '/our-menu',
     background:
       'linear-gradient(150deg,#1A2210 0%,#2E3A1A 100%)',
   },
@@ -15,7 +15,7 @@ const MENU_CATEGORIES = [
     title: 'Meals & Specialties',
     description:
       'Wholesome South Indian meals, biryanis, curries, breads and regional favourites.',
-    href: '/our-menu#rice-meals',
+    href: '/our-menu',
     background:
       'linear-gradient(150deg,#0A1A0F 0%,#162019 100%)',
   },
@@ -24,7 +24,7 @@ const MENU_CATEGORIES = [
     title: 'Coffee & Desserts',
     description:
       'Authentic filter coffee, refreshing beverages and traditional South Indian sweets.',
-    href: '/our-menu#beverages',
+    href: '/our-menu',
     background:
       'linear-gradient(150deg,#2A1A08 0%,#3D2810 100%)',
   },

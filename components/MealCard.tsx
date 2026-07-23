@@ -113,8 +113,6 @@ export default function MealCard({ meal }: { meal: Meal }) {
 
             }>
 
-            <VegDot isVeg={meal.is_veg} />
-
             {meal.is_veg ? 'Veg' : 'Non-Veg'}
 
           </span>

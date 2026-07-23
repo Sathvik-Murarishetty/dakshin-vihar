@@ -1,6 +1,29 @@
+import type { Metadata } from 'next';
+
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 import OurMenuLayout from '@/components/OurMenuLayout';
+
+
+ 
+
+export const metadata: Metadata = {
+
+  title: 'Our Menu — Dakshin Vihar',
+
+  description: 'Browse our full South Indian menu — rice meals, dosas, curries, snacks and more. Available for delivery across Dubai.',
+
+  openGraph: {
+
+    title: 'South Indian Menu — Dakshin Vihar',
+
+    description: 'Authentic South Indian cuisine crafted daily. Order online for delivery in Dubai.',
+
+    type: 'website',
+
+  },
+
+};
 
 import Link from 'next/link';
 

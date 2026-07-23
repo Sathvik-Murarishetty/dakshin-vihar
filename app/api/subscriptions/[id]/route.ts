@@ -13,34 +13,50 @@ export async function DELETE(
 
 ) {
 
-  const { id } = await params;
+  try {
 
-  const supabase = await createServerSupabaseClient();
+    const { id } = await params;
 
-  const { data: { user } } = await supabase.auth.getUser();
+    const supabase = await createServerSupabaseClient();
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { data: { user } } = await supabase.auth.getUser();
 
-
- 
-
-  // Customers can only cancel their own subscriptions
-
-  const { error } = await supabase
-
-    .from('subscriptions')
-
-    .update({ status: 'canceled' })
-
-    .eq('id', id)
-
-    .eq('customer_id', user.id);
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
 
  
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    // Customers can only cancel their own subscriptions
 
-  return NextResponse.json({ success: true });
+    const { error } = await supabase
+
+      .from('subscriptions')
+
+      .update({ status: 'canceled' })
+
+      .eq('id', id)
+
+      .eq('customer_id', user.id);
+
+
+ 
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ success: true });
+
+  } catch (err) {
+
+    console.error('[subscriptions/id] unexpected error:', err);
+
+    return NextResponse.json(
+
+      { error: err instanceof Error ? err.message : 'Internal server error' },
+
+      { status: 500 }
+
+    );
+
+  }
 
 }

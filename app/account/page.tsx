@@ -1,3 +1,5 @@
+import type { Metadata } from 'next';
+
 import { redirect } from 'next/navigation';
 
 import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
@@ -5,6 +7,17 @@ import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/s
 import AccountTabs from '@/components/AccountTabs';
 
 import LogoutButton from '@/components/LogoutButton';
+
+
+ 
+
+export const metadata: Metadata = {
+
+  title: 'My Account — Dakshin Vihar',
+
+  robots: { index: false, follow: false },
+
+};
 
 
  
@@ -22,17 +35,26 @@ export default async function AccountPage({
 
 }: {
 
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; ordersPage?: string }>;
 
 }) {
 
-  const { tab: tabParam } = await searchParams;
+  const { tab: tabParam, ordersPage: ordersPageParam } = await searchParams;
 
   const initialTab: Tab = (VALID_TABS as readonly string[]).includes(tabParam ?? '')
 
     ? (tabParam as Tab)
 
     : 'subscription';
+
+
+ 
+
+  const ORDERS_PAGE_SIZE = 10;
+
+  const ordersPage       = Math.max(1, Number(ordersPageParam ?? '1'));
+
+  const ordersOffset     = (ordersPage - 1) * ORDERS_PAGE_SIZE;
 
 
  
@@ -46,13 +68,13 @@ export default async function AccountPage({
 
  
 
-  const [{ data: profileData }, { data: subscriptions }, { data: orders }] = await Promise.all([
+  const [{ data: profileData }, { data: subscriptions }, { data: orders, count: ordersCount }] = await Promise.all([
 
     supabase.from('profiles').select('full_name, email, phone').eq('id', user.id).single(),
 
     supabase.from('subscriptions').select('*, plan:subscription_plans(name, price_monthly)').eq('customer_id', user.id).order('created_at', { ascending: false }),
 
-    supabase.from('orders').select('*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name, meal_slot)), driver:drivers(name, phone)').eq('customer_id', user.id).order('created_at', { ascending: false }).limit(20),
+    supabase.from('orders').select('*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name, meal_slot)), driver:drivers(name, phone)', { count: 'exact' }).eq('customer_id', user.id).order('created_at', { ascending: false }).range(ordersOffset, ordersOffset + ORDERS_PAGE_SIZE - 1),
 
   ]);
 
@@ -135,11 +157,15 @@ export default async function AccountPage({
 
         initialTab={initialTab}
 
-        subscriptions={subscriptions as never}
+        subscriptions={subscriptions ?? []}
 
-        orders={orders as never}
+        orders={orders ?? []}
 
         profile={profile}
+
+        ordersPage={ordersPage}
+
+        ordersTotalPages={Math.ceil((ordersCount ?? 0) / ORDERS_PAGE_SIZE)}
 
       />
 

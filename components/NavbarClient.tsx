@@ -20,13 +20,9 @@ import { useCart } from '@/hooks/useCart';
 
 const NAV_LINKS = [
 
-  { label: 'Our Story',    href: '/#story'    },
-
   { label: "Today's Menu", href: '/menu'      },
 
-  { label: 'Our Menu',     href: '/our-menu'  },
-
-  { label: 'Subscribe',    href: '/subscribe' },
+  { label: 'Meals Subscription',    href: '/subscribe' },
 
   { label: 'Contact',      href: '/#contact'  },
 

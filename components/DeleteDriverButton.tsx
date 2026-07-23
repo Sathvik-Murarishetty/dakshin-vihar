@@ -30,7 +30,15 @@ export default function DeleteDriverButton({ driverId }: Props) {
 
     setLoading(true);
 
-    await fetch(`/api/admin/drivers/${driverId}`, { method: 'DELETE' });
+    await fetch(`/api/admin/drivers/${driverId}`, {
+
+      method: 'PATCH',
+
+      headers: { 'Content-Type': 'application/json' },
+
+      body: JSON.stringify({ is_active: false }),
+
+    });
 
     router.refresh();
 
@@ -98,7 +106,7 @@ export default function DeleteDriverButton({ driverId }: Props) {
 
     >
 
-      Delete
+      Remove
 
     </button>
 

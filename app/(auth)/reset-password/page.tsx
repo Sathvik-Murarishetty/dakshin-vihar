@@ -30,6 +30,10 @@ export default function ResetPasswordPage() {
 
   const [success,   setSuccess]   = useState(false);
 
+  // Whether a valid recovery session is ready to accept a new password
+
+  const [ready,     setReady]     = useState(false);
+
 
  
 
@@ -39,7 +43,37 @@ export default function ResetPasswordPage() {
 
     let timer: ReturnType<typeof setTimeout>;
 
+
+ 
+
+    // ── PKCE flow: Supabase sends ?code= in the URL ───────────────
+
+    const params = new URLSearchParams(window.location.search);
+
+    const code   = params.get('code');
+
+    if (code) {
+
+      supabase.auth.exchangeCodeForSession(code)
+
+        .then(({ data, error: e }) => {
+
+          if (e || !data.session) setExpired(true);
+
+          else setReady(true);
+
+        });
+
+    }
+
+
+ 
+
+    // ── Legacy implicit flow: token arrives in URL hash ───────────
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+
+      if (event === 'PASSWORD_RECOVERY') setReady(true);
 
       if (event === 'USER_UPDATED') {
 
@@ -50,6 +84,20 @@ export default function ResetPasswordPage() {
       }
 
     });
+
+
+ 
+
+    // If already has a recovery session (e.g. page refresh)
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+
+      if (session && !code) setReady(true);
+
+    });
+
+
+ 
 
     return () => {
 

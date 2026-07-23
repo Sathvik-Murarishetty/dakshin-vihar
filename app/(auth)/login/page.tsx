@@ -1,7 +1,6 @@
 'use client';
 
-
- 
+// Metadata is exported from app/(auth)/login/layout.tsx
 
 import { useState, Suspense } from 'react';
 

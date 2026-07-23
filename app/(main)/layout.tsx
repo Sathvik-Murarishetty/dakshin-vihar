@@ -15,7 +15,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
       <Navbar />
 
-      <main className="pt-24">{children}</main>
+      <main className="pt-24 overflow-x-hidden">{children}</main>
 
       <Footer />
 

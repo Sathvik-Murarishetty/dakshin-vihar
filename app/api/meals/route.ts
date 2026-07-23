@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     .from('meals')
 
-    .select('*')
+    .select('*, meal_items(id, name, is_veg, sort_order)')
 
     .eq('meal_date', date)
 

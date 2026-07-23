@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
+import { logAudit } from '@/lib/audit';
+
 
  
 
@@ -41,11 +43,18 @@ export async function PATCH(
 
  
 
+  // Separate items from meal fields
+
+  const { items, ...mealFields } = body;
+
+
+ 
+
   const { data: meal, error } = await supabase
 
     .from('meals')
 
-    .update(body)
+    .update(mealFields)
 
     .eq('id', id)
 
@@ -57,6 +66,42 @@ export async function PATCH(
  
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+
+ 
+
+  // Replace all items: delete existing, insert new
+
+  if (Array.isArray(items)) {
+
+    await supabase.from('meal_items').delete().eq('meal_id', id);
+
+    if (items.length > 0) {
+
+      await supabase.from('meal_items').insert(
+
+        items.map((item: { name: string; is_veg: boolean }, idx: number) => ({
+
+          meal_id:    id,
+
+          name:       item.name,
+
+          is_veg:     item.is_veg ?? true,
+
+          sort_order: idx,
+
+        }))
+
+      );
+
+    }
+
+  }
+
+
+ 
+
+  await logAudit({ action: 'update', entity: 'meal', entityId: id, details: mealFields });
 
   return NextResponse.json({ meal });
 
@@ -100,6 +145,8 @@ export async function DELETE(
   const { error } = await supabase.from('meals').delete().eq('id', id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  await logAudit({ action: 'delete', entity: 'meal', entityId: id });
 
   return NextResponse.json({ success: true });
 
