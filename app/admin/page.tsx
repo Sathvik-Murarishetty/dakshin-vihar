@@ -43,7 +43,7 @@ export default async function AdminPage({
 
     status?: string; q?: string; slot?: string; type?: string;
 
-    active?: string; filter?: string; category?: string;
+    active?: string; readFilter?: string; category?: string;
 
   }>;
 
@@ -95,7 +95,7 @@ export default async function AdminPage({
 
     case 'coupons':       return <CouponsSection type={params.type} active={params.active} q={params.q} />;
 
-    case 'contact':       return <ContactSection filter={params.filter} q={params.q} />;
+    case 'contact':       return <ContactSection readFilter={params.readFilter} q={params.q} />;
 
     case 'staff':         return <StaffSection status={params.status} q={params.q} />;
 

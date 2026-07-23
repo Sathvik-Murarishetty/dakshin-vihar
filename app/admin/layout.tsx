@@ -2,7 +2,7 @@ import { Suspense, type ReactNode } from 'react';
 
 import { redirect } from 'next/navigation';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
 import { ToastProvider } from '@/hooks/useToast';
 
@@ -24,7 +24,11 @@ export default async function AdminLayout({ children }: { children: ReactNode })
 
  
 
-  const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+  // Use service client to bypass RLS — we already verified the user is authenticated
+
+  const service = createServiceSupabaseClient();
+
+  const { data: profile } = await service.from('profiles').select('role').eq('id', user.id).single();
 
   const role = profile?.role ?? 'customer';
 
