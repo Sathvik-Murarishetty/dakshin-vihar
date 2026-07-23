@@ -1,0 +1,43 @@
+export const ROLE_TABS: Record<string, string[]> = {
+  admin: [
+    'dashboard',
+    'meals',
+    'menu',
+    'orders',
+    'inventory',
+    'subscriptions',
+    'drivers',
+    'coupons',
+    'contact',
+    'staff',
+    'customers',
+    'settings',
+  ],
+  manager: [
+    'dashboard',
+    'meals',
+    'menu',
+    'orders',
+    'inventory',
+    'subscriptions',
+    'drivers',
+    'coupons',
+    'contact',
+    'staff',
+    'customers',
+    'settings',
+  ],
+  kitchen: ['dashboard', 'meals', 'orders', 'inventory'],
+  cook: ['dashboard', 'meals', 'orders', 'inventory'],
+  staff: ['dashboard', 'orders', 'inventory', 'subscriptions', 'contact'],
+  driver: ['dashboard', 'orders'],
+};
+
+export const ROLE_LABEL: Record<string, string> = {
+  admin: 'Administrator',
+  manager: 'Manager',
+  kitchen: 'Kitchen',
+  cook: 'Cook',
+  staff: 'Staff',
+  driver: 'Driver',
+};

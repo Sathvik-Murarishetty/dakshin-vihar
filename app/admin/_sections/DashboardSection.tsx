@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 import { getTodayDateString } from '@/lib/utils';
 
-import { ROLE_LABEL } from '@/app/admin/_components/AdminSidebar';
+import { ROLE_LABEL } from '../_components/roles';
 
 import DeliveryRoutePanel from '@/components/DeliveryRoutePanel';
 
