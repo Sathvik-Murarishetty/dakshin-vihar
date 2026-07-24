@@ -5,6 +5,8 @@
 
 import Link from 'next/link';
 
+import LogoMark from '@/components/LogoMark';
+
 
  
 
@@ -14,7 +16,7 @@ const NAV_LINKS = [
 
   { label: "Today's Menu",href: '/menu'      },
 
-  { label: 'Meals Subscription',  href: '/subscribe' },
+  { label: 'Meal Plans',  href: '/subscribe' },
 
   { label: 'Order Now',   href: '/order'     },
 
@@ -27,11 +29,11 @@ const NAV_LINKS = [
 
 const CONTACT = [
 
-  { label: 'Phone',     value: '+971 50 000 0000',           href: 'tel:+971500000000' },
+  { label: 'Phone',     value: '+971 50 286 8698',           href: 'tel:+971502868698' },
 
-  { label: 'WhatsApp',  value: 'Chat on WhatsApp',           href: 'https://wa.me/971500000000' },
+  { label: 'WhatsApp',  value: 'Chat on WhatsApp',           href: 'https://wa.me/971502868698' },
 
-  { label: 'Email',     value: 'hello@dakshinvihar.com',     href: 'mailto:hello@dakshinvihar.com' },
+  { label: 'Email',     value: 'dakshin.viharr@gmail.com',     href: 'mailto:dakshin.viharr@gmail.com' },
 
 ];
 
@@ -58,15 +60,21 @@ export default function Footer() {
 
           <div>
 
-            <Link href="/" className="inline-block">
+            <Link href="/" className="inline-flex items-center gap-3 group">
 
-              <p className="font-display text-[26px] font-semibold" style={{ color: '#F6F2E9' }}>Dakshin Vihar</p>
+              <LogoMark size={42} />
 
-              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em]" style={{ color: 'rgba(216,177,90,.6)' }}>
+              <div className="flex flex-col leading-none">
 
-                Soulful South Indian
+                <p className="font-display text-[22px] font-semibold transition-colors duration-200 group-hover:text-[#E4C26C]" style={{ color: '#F6F2E9' }}>Dakshin Vihar</p>
 
-              </p>
+                <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.2em]" style={{ color: 'rgba(216,177,90,.6)' }}>
+
+                  Soulful South Indian
+
+                </p>
+
+              </div>
 
             </Link>
 
@@ -166,7 +174,7 @@ export default function Footer() {
 
               style={{ background: 'rgba(216,177,90,.08)', border: '1px solid rgba(216,177,90,.15)' }}>
 
-              <span className="text-[11px] font-medium" style={{ color: 'rgba(216,177,90,.7)' }}>Cash on Delivery · AED 3 delivery fee</span>
+              <span className="text-[11px] font-medium" style={{ color: 'rgba(216,177,90,.7)' }}>Cash on Delivery · AED 3 packaging & delivery fee</span>
 
             </div>
 

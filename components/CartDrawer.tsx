@@ -85,7 +85,7 @@ export default function CartDrawer() {
 
  
 
-  const DELIVERY_FEE = 3; // AED 3 standard delivery
+  const DELIVERY_FEE = 3; // AED 3 — delivery & packaging
 
   const cartTotal    = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
@@ -1123,7 +1123,7 @@ export default function CartDrawer() {
 
                 <div className="flex justify-between text-[14px]">
 
-                  <span style={{ color: '#4B5A50' }}>Delivery</span>
+                  <span style={{ color: '#4B5A50' }}>Delivery &amp; Packaging</span>
 
                   <span style={{ color: '#162019' }}>AED {DELIVERY_FEE}</span>
 
@@ -1155,6 +1155,33 @@ export default function CartDrawer() {
                 </p>
 
               )}
+
+
+ 
+
+              {/* Delivery region notice */}
+
+              <div className="mb-3 rounded-[12px] px-4 py-3 text-[12px] leading-relaxed"
+
+                style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+
+                <p className="font-semibold mb-0.5" style={{ color: '#162019' }}>
+
+                  📍 Delivery Areas
+
+                </p>
+
+                <p style={{ color: '#4B5A50' }}>
+
+                  We currently deliver to <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
+
+                  <strong style={{ color: '#162019' }}>International City</strong>, and{' '}
+
+                  <strong style={{ color: '#162019' }}>Academic City</strong> only.
+
+                </p>
+
+              </div>
 
 
  

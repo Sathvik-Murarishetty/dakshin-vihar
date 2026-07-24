@@ -228,6 +228,30 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
       <div className="lg:hidden container-dv pb-36 pt-8">
 
+        {/* Delivery region notice */}
+
+        <div className="mb-6 flex items-start gap-3 rounded-[16px] px-4 py-3.5"
+
+          style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+
+          <span className="mt-0.5 shrink-0 text-[16px]">📍</span>
+
+          <p className="text-[12px] leading-relaxed" style={{ color: '#4B5A50' }}>
+
+            We currently deliver to{' '}
+
+            <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
+
+            <strong style={{ color: '#162019' }}>International City</strong>{' '}and{' '}
+
+            <strong style={{ color: '#162019' }}>Academic City</strong> only.{' '}
+
+            Delivery &amp; packaging: <strong style={{ color: '#162019' }}>AED 3</strong>.
+
+          </p>
+
+        </div>
+
         {categories.map((cat) => (
 
           <section key={cat.id} id={`mob-cat-${cat.id}`} className="scroll-mt-40 mb-10">
@@ -333,6 +357,30 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
         <main className="flex-1 min-w-0">
 
           <div className="px-6 pb-32">
+
+            {/* Delivery region notice */}
+
+            <div className="mb-6 flex items-start gap-3 rounded-[16px] px-4 py-3.5"
+
+              style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+
+              <span className="mt-0.5 shrink-0 text-[15px]">📍</span>
+
+              <p className="text-[12px] leading-relaxed" style={{ color: '#4B5A50' }}>
+
+                We currently deliver to{' '}
+
+                <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
+
+                <strong style={{ color: '#162019' }}>International City</strong>{' '}and{' '}
+
+                <strong style={{ color: '#162019' }}>Academic City</strong> only.{' '}
+
+              Delivery &amp; packaging: <strong style={{ color: '#162019' }}>AED 3</strong>.
+
+              </p>
+
+            </div>
 
             {categories.map((cat) => (
 

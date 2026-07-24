@@ -4,6 +4,8 @@ const AREAS = [
   'Dubai Silicon Oasis',
   'International City',
   'Academic City',
+  'Dubai Land',
+  'Liwan Circle',
 ];
 
 export default function DeliveryAreas() {

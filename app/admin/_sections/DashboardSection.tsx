@@ -329,7 +329,7 @@ async function AdminDashboard({ period }: { period: Period }) {
 
     { label: `Orders — ${periodLabel}`,      value: periodOrders ?? 0,  href: '/admin?tab=orders',        icon: ICONS.orders },
 
-    { label: `Revenue — ${periodLabel}`,     value: `AED ${revenue.toFixed(0)}`, href: '/admin?tab=orders', icon: ICONS.revenue },
+    { label: `Revenue — ${periodLabel}`,     value: `AED ${revenue.toFixed(0)}`, href: '/admin?tab=orders', highlight: true, icon: ICONS.revenue },
 
     { label: `New Plans — ${periodLabel}`,   value: newSubs ?? 0,       href: '/admin?tab=subscriptions', icon: ICONS.plans },
 

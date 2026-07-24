@@ -17,6 +17,8 @@ import { useCart } from '@/hooks/useCart';
 
 import { Menu, X } from 'lucide-react';
 
+import LogoMark from '@/components/LogoMark';
+
 
  
 
@@ -227,19 +229,25 @@ export default function NavbarClient({ user }: Props) {
 
             {/* Logo */}
 
-            <Link href="/" aria-label="Dakshin Vihar — Home" className="group flex shrink-0 flex-col leading-none">
+            <Link href="/" aria-label="Dakshin Vihar — Home" className="group flex shrink-0 items-center gap-3 leading-none">
 
-              <span className="font-display text-[20px] font-bold tracking-tight transition-colors duration-300 group-hover:text-[#E4C26C]" style={{ color: '#F6F2E9' }}>
+              <LogoMark size={34} />
 
-                Dakshin Vihar
+              <div className="flex flex-col">
 
-              </span>
+                <span className="font-display text-[20px] font-bold tracking-tight transition-colors duration-300 group-hover:text-[#E4C26C]" style={{ color: '#F6F2E9' }}>
 
-              <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em]" style={{ color: 'rgba(216,177,90,.65)' }}>
+                  Dakshin Vihar
 
-                Soulful South Indian
+                </span>
 
-              </span>
+                <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em]" style={{ color: 'rgba(216,177,90,.65)' }}>
+
+                  Soulful South Indian
+
+                </span>
+
+              </div>
 
             </Link>
 
@@ -441,6 +449,22 @@ export default function NavbarClient({ user }: Props) {
             <X size={20} strokeWidth={2} style={{ color: '#F6F2E9' }} />
 
           </button>
+
+          {/* Brand mark in mobile overlay */}
+
+          <div className="absolute top-5 left-6 flex items-center gap-3">
+
+            <LogoMark size={32} />
+
+            <div className="flex flex-col leading-none">
+
+              <span className="font-display text-[17px] font-bold" style={{ color: '#F6F2E9' }}>Dakshin Vihar</span>
+
+              <span className="text-[9px] font-medium uppercase tracking-[0.18em]" style={{ color: 'rgba(216,177,90,.6)' }}>Soulful South Indian</span>
+
+            </div>
+
+          </div>
 
           <nav className="flex flex-col gap-6">
 

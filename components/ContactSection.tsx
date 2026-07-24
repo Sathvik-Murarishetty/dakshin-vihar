@@ -77,9 +77,13 @@ export default function ContactSection() {
                     color: '#162019',
                   }}
                 >
-                  Dubai,
+                  Kitchen Park,
                   <br />
-                  United Arab Emirates
+                  Nadd Hessa,
+                  <br />
+                  Dubai Silicon Oasis,
+                  <br />
+                  Dubai
                 </p>
 
               </div>
@@ -96,13 +100,15 @@ export default function ContactSection() {
                 </p>
 
                 <a
-                  href="tel:+971XXXXXXXXX"
+                  href="tel:+971502868698"
                   className="text-[16px] hover:text-[#D8B15A]"
                   style={{
                     color: '#162019',
                   }}
                 >
-                  +971 XX XXX XXXX
+                  +971 50 286 8698
+                  <br />
+                  +971 56 936 9259
                 </a>
 
               </div>
@@ -119,13 +125,13 @@ export default function ContactSection() {
                 </p>
 
                 <a
-                  href="mailto:hello@dakshinvihar.com"
+                  href="mailto:dakshin.viharr@gmail.com"
                   className="text-[16px] hover:text-[#D8B15A]"
                   style={{
                     color: '#162019',
                   }}
                 >
-                  hello@dakshinvihar.com
+                  dakshin.viharr@gmail.com
                 </a>
 
               </div>
@@ -156,7 +162,7 @@ export default function ContactSection() {
                     color: '#4B5A50',
                   }}
                 >
-                  7:00 AM – 10:00 PM
+                  7:30 AM – 11:00 PM
                 </p>
 
               </div>
