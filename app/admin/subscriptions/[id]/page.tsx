@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { revalidatePath } from 'next/cache';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
 import ConfirmDeleteButton from '@/components/ConfirmDeleteButton';
 
@@ -100,7 +100,7 @@ export default async function SubscriptionDetailPage({
 
     'use server';
 
-    const sb   = await createServerSupabaseClient();
+    const sb   = createServiceSupabaseClient();
 
     const start = new Date();
 
@@ -122,6 +122,8 @@ export default async function SubscriptionDetailPage({
 
     revalidatePath('/admin');
 
+    redirect(`/admin/subscriptions/${id}?toast=Subscription+activated`);
+
   }
 
 
@@ -131,7 +133,7 @@ export default async function SubscriptionDetailPage({
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
     await sb.from('subscriptions').update({ status: 'canceled' }).eq('id', id);
 
@@ -152,7 +154,7 @@ export default async function SubscriptionDetailPage({
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
     await sb.from('subscriptions').update({
 
@@ -181,11 +183,13 @@ export default async function SubscriptionDetailPage({
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
     await sb.from('subscriptions').delete().eq('id', id);
 
     await logAudit({ action: 'delete', entity: 'subscription', entityId: id });
+
+    revalidatePath('/admin');
 
     redirect('/admin?tab=subscriptions&toast=Subscription+deleted');
 
@@ -198,7 +202,7 @@ export default async function SubscriptionDetailPage({
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
     const addressId = formData.get('delivery_address_id') as string;
 
@@ -223,7 +227,7 @@ export default async function SubscriptionDetailPage({
 
   return (
 
-    <div className="max-w-2xl">
+    <div className="max-w-4xl">
 
 
  
@@ -295,7 +299,7 @@ export default async function SubscriptionDetailPage({
 
         {/* Customer */}
 
-        <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+        <div className="rounded-[16px] p-5 min-w-0 overflow-hidden" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
 
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>Customer</p>
 
@@ -312,7 +316,7 @@ export default async function SubscriptionDetailPage({
 
         {/* Plan */}
 
-        <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+        <div className="rounded-[16px] p-5 min-w-0 overflow-hidden" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
 
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>Plan</p>
 
@@ -341,7 +345,7 @@ export default async function SubscriptionDetailPage({
 
         {/* Delivery address */}
 
-        <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+        <div className="rounded-[16px] p-5 min-w-0 overflow-hidden" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
 
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>
 
@@ -377,13 +381,13 @@ export default async function SubscriptionDetailPage({
 
           {allAddresses && allAddresses.length > 0 && (
 
-            <form action={changeAddress} className="mt-3 flex gap-2 items-center">
+            <form action={changeAddress} className="mt-3 flex flex-col gap-2">
 
               <select name="delivery_address_id"
 
                 defaultValue={(sub as { delivery_address_id?: string | null }).delivery_address_id ?? ''}
 
-                className="flex-1 rounded-[10px] px-3 py-2 text-[12px]"
+                className="w-full rounded-[10px] px-3 py-2 text-[12px]"
 
                 style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}>
 
@@ -401,7 +405,7 @@ export default async function SubscriptionDetailPage({
 
               </select>
 
-              <button type="submit" className="rounded-[10px] px-3 py-2 text-[12px] font-medium"
+              <button type="submit" className="self-start rounded-[10px] px-3 py-2 text-[12px] font-medium"
 
                 style={{ background: '#162019', color: '#F6F2E9' }}>
 
@@ -420,7 +424,7 @@ export default async function SubscriptionDetailPage({
 
         {/* Preferences */}
 
-        <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+        <div className="rounded-[16px] p-5 min-w-0 overflow-hidden" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
 
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>Preferences</p>
 

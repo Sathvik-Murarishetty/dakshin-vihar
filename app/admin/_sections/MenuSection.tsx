@@ -158,15 +158,29 @@ export default async function MenuSection({ q }: Props) {
 
           style={{ border: '1px solid rgba(22,32,25,.15)', background: '#FCFBF8', color: '#162019', outline: 'none', maxWidth: '360px' }} />
 
-        <button type="submit" className="rounded-[12px] px-4 py-2 text-[13px] font-medium"
+        <button type="submit" aria-label="Search"
 
-          style={{ background: '#162019', color: '#F6F2E9' }}>Search</button>
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
+
+          style={{ background: '#162019', color: '#F6F2E9' }}>
+
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+
+        </button>
 
         {q && (
 
-          <Link href="/admin?tab=menu" className="rounded-[12px] px-4 py-2 text-[13px] font-medium"
+          <Link href="/admin?tab=menu"
 
-            style={{ border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>Clear</Link>
+            aria-label="Clear search"
+
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
+
+            style={{ border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+
+          </Link>
 
         )}
 
@@ -181,13 +195,13 @@ export default async function MenuSection({ q }: Props) {
 
         action={addCategory}
 
-        className="mb-8 flex flex-wrap gap-3 rounded-[20px] p-5 items-end"
+        className="mb-8 grid gap-3 rounded-[20px] p-5 sm:grid-cols-2"
 
         style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}
 
       >
 
-        <h2 className="w-full text-[14px] font-semibold" style={{ color: '#162019' }}>Add Category</h2>
+        <h2 className="w-full text-[14px] font-semibold sm:col-span-2" style={{ color: '#162019' }}>Add Category</h2>
 
         {[
 
@@ -197,7 +211,7 @@ export default async function MenuSection({ q }: Props) {
 
         ].map(({ name, label, placeholder }) => (
 
-          <div key={name} className="flex flex-col gap-1.5 flex-1 min-w-[180px]">
+          <div key={name} className="flex flex-col gap-1.5">
 
             <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>{label}</label>
 
@@ -219,19 +233,23 @@ export default async function MenuSection({ q }: Props) {
 
         ))}
 
-        <button
+        <div className="flex items-end sm:col-span-2">
 
-          type="submit"
+          <button
 
-          className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
+            type="submit"
 
-          style={{ background: '#162019', color: '#F6F2E9' }}
+            className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
 
-        >
+            style={{ background: '#162019', color: '#F6F2E9' }}
 
-          Add
+          >
 
-        </button>
+            Add
+
+          </button>
+
+        </div>
 
       </form>
 
@@ -244,18 +262,18 @@ export default async function MenuSection({ q }: Props) {
 
         action={addItem}
 
-        className="mb-8 flex flex-wrap gap-3 rounded-[20px] p-5 items-end"
+        className="mb-8 grid gap-3 rounded-[20px] p-5 sm:grid-cols-2 lg:grid-cols-3"
 
         style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}
 
       >
 
-        <h2 className="w-full text-[14px] font-semibold" style={{ color: '#162019' }}>Add Menu Item</h2>
+        <h2 className="w-full text-[14px] font-semibold sm:col-span-2 lg:col-span-3" style={{ color: '#162019' }}>Add Menu Item</h2>
 
 
  
 
-        <div className="flex flex-col gap-1.5 min-w-[160px]">
+        <div className="flex flex-col gap-1.5">
 
           <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Category</label>
 
@@ -294,7 +312,7 @@ export default async function MenuSection({ q }: Props) {
 
         ].map(({ name, label, placeholder }) => (
 
-          <div key={name} className="flex flex-col gap-1.5 flex-1 min-w-[140px]">
+          <div key={name} className="flex flex-col gap-1.5">
 
             <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>{label}</label>
 
@@ -346,19 +364,23 @@ export default async function MenuSection({ q }: Props) {
 
  
 
-        <button
+        <div className="flex items-end sm:col-span-2 lg:col-span-3">
 
-          type="submit"
+          <button
 
-          className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
+            type="submit"
 
-          style={{ background: '#162019', color: '#F6F2E9' }}
+            className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
 
-        >
+            style={{ background: '#162019', color: '#F6F2E9' }}
 
-          Add Item
+          >
 
-        </button>
+            Add Item
+
+          </button>
+
+        </div>
 
       </form>
 

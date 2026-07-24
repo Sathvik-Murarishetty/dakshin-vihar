@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { revalidatePath } from 'next/cache';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
 
  
@@ -18,7 +18,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   const { id } = await params;
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = createServiceSupabaseClient();
 
 
  
@@ -59,7 +59,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
     'use server';
 
-    const sb   = await createServerSupabaseClient();
+    const sb   = createServiceSupabaseClient();
 
     const role = formData.get('role') as string;
 
@@ -99,7 +99,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   return (
 
-    <div className="max-w-2xl">
+    <div className="max-w-4xl">
 
       <div className="mb-8">
 

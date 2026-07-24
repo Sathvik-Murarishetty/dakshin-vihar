@@ -81,13 +81,17 @@ export default function EditMealForm({ meal }: Props) {
 
     setError(null);
 
+    // Derive is_veg from items: if any item is non-veg the meal is non-veg; default true when no items
+
+    const is_veg = items.length === 0 ? true : items.every((i) => i.is_veg);
+
     const res = await fetch(`/api/admin/meals/${meal.id}`, {
 
       method: 'PATCH',
 
       headers: { 'Content-Type': 'application/json' },
 
-      body: JSON.stringify({ ...form, price: Number(form.price), items }),
+      body: JSON.stringify({ ...form, price: Number(form.price), items, is_veg }),
 
     });
 
@@ -204,12 +208,6 @@ export default function EditMealForm({ meal }: Props) {
           </label>
 
         ))}
-
-        <label className="flex items-center gap-2 text-[13px]" style={{ color: '#162019' }}>
-
-          <input type="checkbox" checked={form.is_veg} onChange={(e) => set('is_veg', e.target.checked)} /> Veg
-
-        </label>
 
         <label className="flex items-center gap-2 text-[13px]" style={{ color: '#162019' }}>
 

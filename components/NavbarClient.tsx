@@ -15,14 +15,20 @@ import CartButton from '@/components/CartButton';
 
 import { useCart } from '@/hooks/useCart';
 
+import { Menu, X } from 'lucide-react';
+
 
  
 
 const NAV_LINKS = [
 
+  { label: 'Our Story',    href: '/#story'    },
+
   { label: "Today's Menu", href: '/menu'      },
 
-  { label: 'Meals Subscription',    href: '/subscribe' },
+  { label: 'Our Menu',     href: '/our-menu'  },
+
+  { label: 'Subscribe',    href: '/subscribe' },
 
   { label: 'Contact',      href: '/#contact'  },
 
@@ -367,7 +373,7 @@ export default function NavbarClient({ user }: Props) {
 
  
 
-              {/* Hamburger */}
+              {/* Hamburger / Close toggle */}
 
               <button
 
@@ -375,15 +381,19 @@ export default function NavbarClient({ user }: Props) {
 
                 aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
 
-                className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] md:hidden"
+                className="flex h-9 w-9 items-center justify-center rounded-full transition-all duration-200 md:hidden"
+
+                style={{ background: mobileOpen ? 'rgba(246,242,233,.12)' : 'transparent' }}
 
               >
 
-                <span className="h-0.5 w-5 rounded-full transition-all duration-300" style={{ background: '#F6F2E9', transform: mobileOpen ? 'rotate(45deg) translateY(7px)' : 'none' }} />
+                {mobileOpen
 
-                <span className="h-0.5 w-5 rounded-full transition-all duration-300" style={{ background: '#F6F2E9', opacity: mobileOpen ? 0 : 1 }} />
+                  ? <X size={20} strokeWidth={2} style={{ color: '#F6F2E9' }} />
 
-                <span className="h-0.5 w-5 rounded-full transition-all duration-300" style={{ background: '#F6F2E9', transform: mobileOpen ? 'rotate(-45deg) translateY(-7px)' : 'none' }} />
+                  : <Menu size={20} strokeWidth={1.8} style={{ color: '#F6F2E9' }} />
+
+                }
 
               </button>
 
@@ -409,6 +419,24 @@ export default function NavbarClient({ user }: Props) {
           style={{ background: '#0F1612' }}
 
         >
+
+          {/* Close button top-right */}
+
+          <button
+
+            onClick={() => setMobileOpen(false)}
+
+            aria-label="Close menu"
+
+            className="absolute top-5 right-5 flex h-10 w-10 items-center justify-center rounded-full"
+
+            style={{ background: 'rgba(246,242,233,.08)' }}
+
+          >
+
+            <X size={20} strokeWidth={2} style={{ color: '#F6F2E9' }} />
+
+          </button>
 
           <nav className="flex flex-col gap-6">
 

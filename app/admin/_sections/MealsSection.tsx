@@ -124,17 +124,29 @@ export default async function MealsSection({ slot = 'all', q }: Props) {
 
             style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
 
-          <button type="submit" className="rounded-[12px] px-4 py-2 text-[13px] font-medium"
+          <button type="submit" aria-label="Search"
 
-            style={{ background: '#162019', color: '#F6F2E9' }}>Search</button>
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
+
+            style={{ background: '#162019', color: '#F6F2E9' }}>
+
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="7" cy="7" r="5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg>
+
+          </button>
 
           {q && (
 
             <Link href={`/admin?tab=meals&slot=${slot}`}
 
-              className="rounded-[12px] px-4 py-2 text-[13px] font-medium"
+              aria-label="Clear search"
 
-              style={{ border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>Clear</Link>
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+
+            </Link>
 
           )}
 

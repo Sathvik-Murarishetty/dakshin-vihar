@@ -505,7 +505,7 @@ export default function CartDrawer() {
 
             <p className="text-center text-[14px]" style={{ color: '#4B5A50' }}>Add some items to get started.</p>
 
-            <button onClick={closeCart} className="btn-gold mt-2">Browse Menu</button>
+            <button onClick={() => { closeCart(); router.push('/order'); }} className="btn-gold mt-2">Order Now</button>
 
           </div>
 

@@ -105,7 +105,7 @@ export default async function EditMenuItemPage({
 
   return (
 
-    <div className="max-w-lg">
+    <div className="max-w-2xl">
 
       <div className="mb-8">
 

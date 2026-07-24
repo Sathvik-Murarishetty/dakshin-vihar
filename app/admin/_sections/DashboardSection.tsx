@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 import { getTodayDateString } from '@/lib/utils';
 
-import { ROLE_LABEL } from '../_components/roles';
+import { ROLE_LABEL } from '@/app/admin/_components/roles';
 
 import DeliveryRoutePanel from '@/components/DeliveryRoutePanel';
 
@@ -115,6 +115,8 @@ function StatCard({
 
   sub,
 
+  icon,
+
 }: {
 
   label: string;
@@ -126,6 +128,8 @@ function StatCard({
   highlight?: boolean;
 
   sub?: string;
+
+  icon?: React.ReactNode;
 
 }) {
 
@@ -149,9 +153,25 @@ function StatCard({
 
     >
 
-      <p className="text-[12px] font-medium uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>{label}</p>
+      <div className="flex items-center justify-between mb-2">
 
-      <p className="mt-2 font-display text-[48px] font-bold leading-none"
+        <p className="text-[12px] font-medium uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>{label}</p>
+
+        {icon && (
+
+          <span className="flex h-8 w-8 items-center justify-center rounded-[10px]"
+
+            style={{ background: highlight ? 'rgba(216,177,90,.12)' : 'rgba(22,32,25,.06)', color: highlight ? '#D8B15A' : '#4B5A50' }}>
+
+            {icon}
+
+          </span>
+
+        )}
+
+      </div>
+
+      <p className="mt-1 font-display text-[42px] font-bold leading-none"
 
         style={{ color: highlight ? '#D8B15A' : '#162019' }}>
 
@@ -225,9 +245,6 @@ async function AdminDashboard({ period }: { period: Period }) {
 
   ]);
 
-
- 
-
   const revenue = (revenueResult.data ?? []).reduce(
 
     (sum, o) => sum + (Number(o.final_amount) || 0),
@@ -285,23 +302,57 @@ async function AdminDashboard({ period }: { period: Period }) {
 
  
 
+  // Icon SVGs for stat cards
+
+  const ICONS = {
+
+    orders:   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="2" width="10" height="12" rx="1.5"/><line x1="6" y1="6" x2="10" y2="6"/><line x1="6" y1="9" x2="10" y2="9"/></svg>,
+
+    revenue:  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><line x1="8" y1="5.5" x2="8" y2="10.5"/><line x1="6" y1="7" x2="10" y2="7"/></svg>,
+
+    plans:    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 8A6 6 0 1 1 8 2"/><polyline points="14,2 14,8 8,8"/></svg>,
+
+    pending:  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10,10"/></svg>,
+
+    active:   <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="3,8 6,11 13,5"/></svg>,
+
+    messages: <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 11a1 1 0 0 1-1 1H5l-3 3V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1z"/></svg>,
+
+    drivers:  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="7" width="14" height="6" rx="1.5"/><path d="M3 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v2"/><circle cx="5" cy="13" r="1.3"/><circle cx="11" cy="13" r="1.3"/></svg>,
+
+  };
+
+
+ 
+
   const stats = [
 
-    { label: `Orders — ${periodLabel}`,      value: periodOrders ?? 0,  href: '/admin?tab=orders' },
+    { label: `Orders — ${periodLabel}`,      value: periodOrders ?? 0,  href: '/admin?tab=orders',        icon: ICONS.orders },
 
-    { label: `Revenue — ${periodLabel}`,     value: `AED ${revenue.toFixed(0)}`, href: '/admin?tab=orders' },
+    { label: `Revenue — ${periodLabel}`,     value: `AED ${revenue.toFixed(0)}`, href: '/admin?tab=orders', icon: ICONS.revenue },
 
-    { label: `New Plans — ${periodLabel}`,   value: newSubs ?? 0,       href: '/admin?tab=subscriptions' },
+    { label: `New Plans — ${periodLabel}`,   value: newSubs ?? 0,       href: '/admin?tab=subscriptions', icon: ICONS.plans },
 
-    { label: 'Pending Plans',                value: pendingSubs ?? 0,   href: '/admin?tab=subscriptions', highlight: (pendingSubs ?? 0) > 0 },
+    { label: 'Pending Plans',                value: pendingSubs ?? 0,   href: '/admin?tab=subscriptions', highlight: (pendingSubs ?? 0) > 0, icon: ICONS.pending },
 
-    { label: 'Active Plans',                 value: activeSubs ?? 0,    href: '/admin?tab=subscriptions' },
+    { label: 'Active Plans',                 value: activeSubs ?? 0,    href: '/admin?tab=subscriptions', icon: ICONS.active },
 
-    { label: 'Unread Messages',              value: unreadContact ?? 0, href: '/admin?tab=contact', highlight: (unreadContact ?? 0) > 0 },
+    { label: 'Unread Messages',              value: unreadContact ?? 0, href: '/admin?tab=contact', highlight: (unreadContact ?? 0) > 0, icon: ICONS.messages },
 
-    { label: 'Active Drivers',               value: activeDrivers ?? 0, href: '/admin?tab=drivers' },
+    { label: 'Active Drivers',               value: activeDrivers ?? 0, href: '/admin?tab=drivers',       icon: ICONS.drivers },
 
   ];
+
+
+ 
+
+  // Subscription health bar
+
+  const totalSubs  = (pendingSubs ?? 0) + (activeSubs ?? 0);
+
+  const activePct  = totalSubs > 0 ? Math.round(((activeSubs ?? 0) / totalSubs) * 100) : 0;
+
+  const pendingPct = totalSubs > 0 ? Math.round(((pendingSubs ?? 0) / totalSubs) * 100) : 0;
 
 
  
@@ -312,11 +363,74 @@ async function AdminDashboard({ period }: { period: Period }) {
 
       <PeriodSelector current={period} />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
 
         {stats.map((s) => <StatCard key={s.label} {...s} />)}
 
       </div>
+
+
+ 
+
+      {/* Subscription health bar */}
+
+      {totalSubs > 0 && (
+
+        <div className="mt-6 rounded-[20px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+
+          <div className="flex items-center justify-between mb-3">
+
+            <p className="text-[12px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>
+
+              Subscription Health — {totalSubs} total
+
+            </p>
+
+            <div className="flex items-center gap-4 text-[11px]">
+
+              <span className="flex items-center gap-1.5" style={{ color: '#16a34a' }}>
+
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#16a34a' }} />
+
+                Active {activePct}%
+
+              </span>
+
+              <span className="flex items-center gap-1.5" style={{ color: '#b98a3d' }}>
+
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: '#D8B15A' }} />
+
+                Pending {pendingPct}%
+
+              </span>
+
+            </div>
+
+          </div>
+
+          <div className="flex h-3 overflow-hidden rounded-full gap-0.5">
+
+            {activeSubs! > 0 && (
+
+              <div className="h-full rounded-l-full transition-all duration-500"
+
+                style={{ width: `${activePct}%`, background: '#16a34a' }} />
+
+            )}
+
+            {pendingSubs! > 0 && (
+
+              <div className="h-full rounded-r-full transition-all duration-500"
+
+                style={{ width: `${pendingPct}%`, background: '#D8B15A' }} />
+
+            )}
+
+          </div>
+
+        </div>
+
+      )}
 
 
  

@@ -38,7 +38,7 @@ export default async function EditMealPage({
 
   return (
 
-    <div className="max-w-xl">
+    <div className="max-w-3xl">
 
       <h1 className="font-display text-[32px] font-semibold mb-8" style={{ color: '#162019' }}>Edit Meal</h1>
 

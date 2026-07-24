@@ -3,7 +3,7 @@
 
  
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,27 @@ import MealImageUpload from '@/components/MealImageUpload';
 import MealItemsEditor, { type ItemDraft } from '@/components/MealItemsEditor';
 
 import { getTodayDateString } from '@/lib/utils';
+
+
+ 
+
+interface RecentMeal {
+
+  id: string;
+
+  name: string;
+
+  description: string | null;
+
+  price: number;
+
+  meal_slot: string;
+
+  image_url: string | null;
+
+  meal_items: { name: string; is_veg: boolean; sort_order: number }[];
+
+}
 
 
  
@@ -40,11 +61,32 @@ export default function NewMealPage() {
 
   });
 
-  const [items,   setItems]   = useState<ItemDraft[]>([]);
+  const [items,        setItems]        = useState<ItemDraft[]>([]);
 
-  const [loading, setLoading] = useState(false);
+  const [loading,      setLoading]      = useState(false);
 
-  const [error,   setError]   = useState<string | null>(null);
+  const [error,        setError]        = useState<string | null>(null);
+
+  const [recentMeals,  setRecentMeals]  = useState<RecentMeal[]>([]);
+
+  const [copyMealId,   setCopyMealId]   = useState('');
+
+
+ 
+
+  // Fetch recent meals for prefill
+
+  useEffect(() => {
+
+    fetch('/api/admin/meals/recent')
+
+      .then((r) => r.json())
+
+      .then(({ meals }) => setRecentMeals(meals ?? []))
+
+      .catch(() => {});
+
+  }, []);
 
 
  
@@ -52,6 +94,47 @@ export default function NewMealPage() {
   function set(key: string, val: unknown) {
 
     setForm((prev) => ({ ...prev, [key]: val }));
+
+  }
+
+
+ 
+
+  function handleCopyMeal(mealId: string) {
+
+    setCopyMealId(mealId);
+
+    if (!mealId) return;
+
+    const meal = recentMeals.find((m) => m.id === mealId);
+
+    if (!meal) return;
+
+    setForm((prev) => ({
+
+      ...prev,
+
+      name:        meal.name,
+
+      description: meal.description ?? '',
+
+      price:       String(meal.price),
+
+      meal_slot:   meal.meal_slot,
+
+      image_url:   meal.image_url ?? '',
+
+    }));
+
+    setItems(
+
+      (meal.meal_items ?? [])
+
+        .sort((a, b) => a.sort_order - b.sort_order)
+
+        .map((i) => ({ name: i.name, is_veg: i.is_veg }))
+
+    );
 
   }
 
@@ -69,13 +152,17 @@ export default function NewMealPage() {
 
  
 
+    // Derive is_veg from items: if any item is non-veg the meal is non-veg; default true when no items
+
+    const is_veg = items.length === 0 ? true : items.every((i) => i.is_veg);
+
     const res = await fetch('/api/admin/meals', {
 
       method: 'POST',
 
       headers: { 'Content-Type': 'application/json' },
 
-      body: JSON.stringify({ ...form, price: Number(form.price), items }),
+      body: JSON.stringify({ ...form, price: Number(form.price), items, is_veg }),
 
     });
 
@@ -92,9 +179,69 @@ export default function NewMealPage() {
 
   return (
 
-    <div className="max-w-xl">
+    <div className="max-w-3xl">
 
       <h1 className="font-display text-[32px] font-semibold mb-8" style={{ color: '#162019' }}>Add Meal</h1>
+
+
+ 
+
+      {/* Copy from existing meal */}
+
+      {recentMeals.length > 0 && (
+
+        <div className="mb-6 rounded-[16px] p-4 flex flex-col gap-2"
+
+          style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+
+          <label className="text-[12px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>
+
+            Copy from existing meal (prefill)
+
+          </label>
+
+          <select
+
+            value={copyMealId}
+
+            onChange={(e) => handleCopyMeal(e.target.value)}
+
+            className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+            style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+          >
+
+            <option value="">— Select a meal to copy —</option>
+
+            {recentMeals.map((m) => (
+
+              <option key={m.id} value={m.id}>
+
+                {m.name} · {m.meal_slot} · AED {m.price}
+
+              </option>
+
+            ))}
+
+          </select>
+
+          {copyMealId && (
+
+            <p className="text-[11px]" style={{ color: '#16a34a' }}>
+
+              ✓ Fields prefilled from selected meal. Adjust date and any other details as needed.
+
+            </p>
+
+          )}
+
+        </div>
+
+      )}
+
+
+ 
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
 
@@ -181,12 +328,6 @@ export default function NewMealPage() {
             </label>
 
           ))}
-
-          <label className="flex items-center gap-2 text-[13px]" style={{ color: '#162019' }}>
-
-            <input type="checkbox" checked={form.is_veg} onChange={(e) => set('is_veg', e.target.checked)} /> Veg
-
-          </label>
 
           <label className="flex items-center gap-2 text-[13px]" style={{ color: '#162019' }}>
 

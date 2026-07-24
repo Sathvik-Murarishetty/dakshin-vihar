@@ -11,8 +11,6 @@ import OrderMealRow from '@/components/OrderMealRow';
 
 import OrderCartAutoOpen from '@/components/OrderCartAutoOpen';
 
-import { ChevronDown, Menu } from 'lucide-react';
-
 import type { MenuItem, MenuCategory } from '@/types';
 
 import Link from 'next/link';
@@ -31,10 +29,6 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
   const [activeId,     setActiveId]     = useState(categories[0]?.id ?? '');
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
   const navRef      = useRef<HTMLElement>(null);
 
   const cartTotal   = items.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -42,7 +36,7 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
  
 
-  // Auto-scroll sidebar nav so the active category stays visible
+  // Auto-scroll strip so the active category tab stays visible
 
   useEffect(() => {
 
@@ -52,34 +46,9 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
     const btn = nav.querySelector<HTMLElement>(`[data-cat="${activeId}"]`);
 
-    if (btn) btn.scrollIntoView({ block: 'nearest' });
+    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
 
   }, [activeId]);
-
-
- 
-
-  // Close mobile dropdown on outside click
-
-  useEffect(() => {
-
-    if (!dropdownOpen) return;
-
-    const handler = (e: MouseEvent) => {
-
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-
-        setDropdownOpen(false);
-
-      }
-
-    };
-
-    document.addEventListener('mousedown', handler);
-
-    return () => document.removeEventListener('mousedown', handler);
-
-  }, [dropdownOpen]);
 
 
  
@@ -92,6 +61,16 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
     const observers: IntersectionObserver[] = [];
 
+
+ 
+
+    // Use separate rootMargins to account for sticky bars on each breakpoint
+
+    const isMobile = () => window.innerWidth < 1024;
+
+
+ 
+
     ['mob-cat', 'dsk-cat'].forEach((prefix) => {
 
       categories.forEach((cat) => {
@@ -100,11 +79,27 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
         if (!el) return;
 
+        // Mobile: navbar (96px) + dropdown bar (~52px) → ~148px top offset; use looser margin
+
+        // Desktop: navbar (96px) + category sidebar header (48px) → offset
+
+        const mobile = prefix === 'mob-cat';
+
         const obs = new IntersectionObserver(
 
           ([entry]) => { if (entry.isIntersecting) setActiveId(cat.id); },
 
-          { rootMargin: '-15% 0px -70% 0px', threshold: 0 }
+          {
+
+            rootMargin: mobile
+
+              ? '-148px 0px -40% 0px'   // generous window so mobile triggers reliably
+
+              : '-112px 0px -50% 0px',
+
+            threshold: 0,
+
+          }
 
         );
 
@@ -117,6 +112,8 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
     });
 
     return () => observers.forEach((o) => o.disconnect());
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
 
   }, [categories]);
 
@@ -136,8 +133,6 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
     window.scrollTo({ top, behavior: 'instant' as ScrollBehavior });
 
     setActiveId(id);
-
-    setDropdownOpen(false);
 
   }, []);
 
@@ -172,81 +167,55 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
  
 
-      {/* ── Mobile: dropdown category nav ─────────── */}
+      {/* ── Mobile: horizontal scrollable category strip ─── */}
 
       <div className="lg:hidden sticky top-24 z-30"
 
         style={{ background: 'rgba(246,242,233,.96)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(22,32,25,.08)' }}>
 
-        <div className="container-dv py-2.5">
+        <div
 
-          <div className="relative" ref={dropdownRef}>
+          ref={navRef as React.RefObject<HTMLDivElement>}
 
-            <button
+          className="flex gap-1.5 overflow-x-auto py-2.5 px-4"
 
-              onClick={() => setDropdownOpen((v) => !v)}
+          style={{ scrollbarWidth: 'none' }}
 
-              className="flex w-full items-center gap-2 rounded-[12px] px-4 py-2.5 text-left transition-all duration-150"
+        >
 
-              style={{ background: dropdownOpen ? '#162019' : 'rgba(22,32,25,.08)', color: dropdownOpen ? '#F6F2E9' : '#162019' }}
+          {categories.map((cat) => {
 
-            >
+            const active = cat.id === activeId;
 
-              <Menu size={14} strokeWidth={1.5} className="shrink-0" />
+            return (
 
-              <span className="flex-1 truncate text-[13px] font-semibold">
+              <button
 
-                {categories.find((c) => c.id === activeId)?.name ?? 'Menu'}
+                key={cat.id}
 
-              </span>
+                data-cat={cat.id}
 
-              <ChevronDown size={13} strokeWidth={2}
+                onClick={() => scrollTo(cat.id)}
 
-                className="shrink-0 transition-transform duration-200"
+                className="shrink-0 rounded-full px-4 py-1.5 text-[12px] font-medium whitespace-nowrap transition-all duration-200"
 
-                style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'none' }} />
+                style={active
 
-            </button>
+                  ? { background: '#162019', color: '#F6F2E9' }
 
-            {dropdownOpen && (
+                  : { background: 'transparent', color: '#4B5A50', border: '1px solid rgba(22,32,25,.12)' }
 
-              <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 overflow-hidden rounded-[16px]"
+                }
 
-                style={{ background: '#162019', border: '1px solid rgba(246,242,233,.1)', boxShadow: '0 16px 48px rgba(0,0,0,.3)' }}>
+              >
 
-                {categories.map((cat) => {
+                {cat.name}
 
-                  const active = cat.id === activeId;
+              </button>
 
-                  return (
+            );
 
-                    <button key={cat.id} onClick={() => scrollTo(cat.id)}
-
-                      className="flex w-full items-center justify-between px-5 py-3 text-left text-[14px] font-medium transition-colors duration-100"
-
-                      style={active
-
-                        ? { background: 'rgba(246,242,233,.1)', color: '#F6F2E9', borderLeft: '2px solid #D8B15A' }
-
-                        : { color: 'rgba(246,242,233,.7)' }
-
-                      }>
-
-                      {cat.name}
-
-                      <span className="text-[11px]" style={{ color: 'rgba(216,177,90,.45)' }}>{cat.menu_items.length}</span>
-
-                    </button>
-
-                  );
-
-                })}
-
-              </div>
-
-            )}
-
-          </div>
+          })}
 
         </div>
 

@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 import { ROLE_TABS, ROLE_LABEL } from './roles';
- 
+
 
 const ALL_TABS = [
 
@@ -38,6 +38,8 @@ const ALL_TABS = [
 
   { id: 'settings',      label: 'Store Settings' },
 
+  { id: 'account',       label: 'My Account' },
+
 ];
 
 
@@ -58,6 +60,8 @@ const SIDEBAR_GROUPS: Array<{ label: string; items: string[] }> = [
   { label: 'Menu',       items: ['menu'] },
 
   { label: 'Support',    items: ['contact'] },
+
+  { label: 'Account',    items: ['account'] },
 
 ];
 
