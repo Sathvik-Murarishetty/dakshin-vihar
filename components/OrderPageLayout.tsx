@@ -226,7 +226,7 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
       {/* ── Mobile: items ────────────────────────────── */}
 
-      <div className="lg:hidden container-dv pb-36 pt-4">
+      <div className="lg:hidden container-dv pb-36 pt-8">
 
         {categories.map((cat) => (
 

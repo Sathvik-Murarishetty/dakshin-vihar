@@ -94,6 +94,10 @@ export default function NavbarClient({ user }: Props) {
 
  
 
+  // Close mobile menu whenever the cart opens to avoid two X icons showing simultaneously
+
+  useEffect(() => { if (isCartOpen) setMobileOpen(false); }, [isCartOpen]);
+
   useEffect(() => {
 
     document.body.style.overflow = mobileOpen ? 'hidden' : '';

@@ -500,11 +500,7 @@ export default async function MenuSection({ q }: Props) {
 
                   ).map((item, i) => (
 
-                    <tr
-
-                      key={item.id}
-
-                      style={{
+                    <tr key={item.id} style={{
 
                         borderTop: '1px solid rgba(22,32,25,.06)',
 

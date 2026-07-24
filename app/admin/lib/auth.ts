@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-
 import {
   createServerSupabaseClient,
   createServiceSupabaseClient,
@@ -14,16 +13,21 @@ export type AdminRole =
   | 'driver'
   | 'customer';
 
+export interface AdminProfile {
+  full_name: string | null;
+  role: AdminRole;
+}
+
 export interface CurrentAdmin {
   user: {
     id: string;
     email: string | null;
   };
   role: AdminRole;
+  profile: AdminProfile | null;
 }
 
 export async function getCurrentAdmin(): Promise<CurrentAdmin> {
-  // Read authenticated user
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -35,17 +39,16 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin> {
     redirect('/login?redirect=/admin');
   }
 
-  // Read role using service client (bypasses RLS)
   const service = createServiceSupabaseClient();
 
-  const { data: profile, error: profileError } = await service
+  const { data: profile, error } = await service
     .from('profiles')
-    .select('role')
+    .select('full_name, role')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profileError) {
-    console.error('Failed to load profile:', profileError);
+  if (error) {
+    console.error(error);
     redirect('/');
   }
 
@@ -55,5 +58,11 @@ export async function getCurrentAdmin(): Promise<CurrentAdmin> {
       email: user.email ?? null,
     },
     role: (profile?.role ?? 'customer') as AdminRole,
+    profile: profile
+      ? {
+          full_name: profile.full_name,
+          role: (profile.role ?? 'customer') as AdminRole,
+        }
+      : null,
   };
 }
