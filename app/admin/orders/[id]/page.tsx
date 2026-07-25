@@ -197,6 +197,25 @@ export default async function OrderDetailPage({
 
  
 
+  async function toggleDelay() {
+
+    'use server';
+
+    const sb = await createServerSupabaseClient();
+
+    await sb.from('orders').update({ is_delayed: !(order as { is_delayed?: boolean }).is_delayed }).eq('id', id);
+
+    revalidatePath(`/admin/orders/${id}`);
+
+    revalidatePath('/admin');
+
+    redirect(`/admin/orders/${id}?toast=Delay+status+updated`);
+
+  }
+
+
+ 
+
   /* ── Render ─────────────────────────────────────────── */
 
   return (
@@ -239,17 +258,33 @@ export default async function OrderDetailPage({
 
         </div>
 
-        <span
+        <div className="flex flex-col items-end gap-2">
 
-          className="rounded-full px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.1em]"
+          <span
 
-          style={STATUS_STYLES[order.status]}
+            className="rounded-full px-4 py-1.5 text-[12px] font-semibold uppercase tracking-[0.1em]"
 
-        >
+            style={STATUS_STYLES[order.status]}
 
-          {order.status.replace(/_/g, ' ')}
+          >
 
-        </span>
+            {order.status.replace(/_/g, ' ')}
+
+          </span>
+
+          {(order as { is_delayed?: boolean }).is_delayed && (
+
+            <span className="rounded-full px-3 py-1 text-[11px] font-semibold"
+
+              style={{ background: 'rgba(216,177,90,.12)', color: '#b98a3d', border: '1px solid rgba(216,177,90,.3)' }}>
+
+              ⏳ Delayed
+
+            </span>
+
+          )}
+
+        </div>
 
       </div>
 
@@ -504,17 +539,42 @@ export default async function OrderDetailPage({
 
           <form action={cancelOrder}>
 
-            <button
-
-              type="submit"
+            <button type="submit"
 
               className="rounded-full px-5 py-2 text-[13px] font-semibold"
 
-              style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a', border: '1px solid rgba(185,58,58,.2)' }}
-
-            >
+              style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a', border: '1px solid rgba(185,58,58,.2)' }}>
 
               Cancel Order
+
+            </button>
+
+          </form>
+
+        )}
+
+
+ 
+
+        {/* Delayed delivery toggle — only for active/in-transit orders */}
+
+        {order.status !== 'delivered' && order.status !== 'canceled' && (
+
+          <form action={toggleDelay}>
+
+            <button type="submit"
+
+              className="rounded-full px-5 py-2 text-[13px] font-semibold"
+
+              style={(order as { is_delayed?: boolean }).is_delayed
+
+                ? { background: 'rgba(22,160,133,.08)', color: '#16a34a', border: '1px solid rgba(22,160,133,.25)' }
+
+                : { background: 'rgba(216,177,90,.08)', color: '#b98a3d', border: '1px solid rgba(216,177,90,.3)' }
+
+              }>
+
+              {(order as { is_delayed?: boolean }).is_delayed ? '✅ Clear Delay' : '⏳ Mark as Delayed'}
 
             </button>
 

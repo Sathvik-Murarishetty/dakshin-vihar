@@ -620,8 +620,6 @@ async function KitchenDashboard() {
 
                   </div>
 
-                  <span className="text-[13px] font-semibold" style={{ color: '#162019' }}>AED {meal.price}</span>
-
                 </div>
 
                 {meal.meal_items && (meal.meal_items as Array<{ name: string; is_veg: boolean; sort_order: number }>)

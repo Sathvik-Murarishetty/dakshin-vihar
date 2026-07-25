@@ -55,6 +55,30 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
  
 
+  // For each driver show whether they currently have delayed active orders
+
+  // (used to label the bulk-toggle button correctly)
+
+  const { data: delayedDriverIds } = await supabase
+
+    .from('orders')
+
+    .select('driver_id')
+
+    .eq('is_delayed', true)
+
+    .not('status', 'in', '("delivered","canceled")')
+
+    .not('driver_id', 'is', null);
+
+
+ 
+
+  const delayedSet = new Set((delayedDriverIds ?? []).map((r) => r.driver_id as string));
+
+
+ 
+
   async function addDriver(formData: FormData) {
 
     'use server';
@@ -185,6 +209,84 @@ export default async function DriversSection({ status = 'all', q }: Props) {
     await sb.from('drivers').update({ is_active: !current }).eq('id', driverId);
 
     revalidatePath('/admin');
+
+  }
+
+
+ 
+
+  /**
+
+   * Bulk toggle delay for all active orders assigned to this driver.
+
+   *
+
+   * Logic:
+
+   *  - Get all non-delivered / non-canceled orders for the driver.
+
+   *  - If ANY order is NOT delayed → mark ONLY those as delayed (leave already-delayed orders untouched).
+
+   *  - If ALL orders are already delayed (or driver has no active orders) → clear all delays.
+
+   */
+
+  async function bulkToggleDriverDelay(driverId: string) {
+
+    'use server';
+
+    const sb = createServiceSupabaseClient();
+
+
+ 
+
+    const { data: activeOrders } = await sb
+
+      .from('orders')
+
+      .select('id, is_delayed')
+
+      .eq('driver_id', driverId)
+
+      .not('status', 'in', '("delivered","canceled")');
+
+
+ 
+
+    if (!activeOrders?.length) { revalidatePath('/admin'); return; }
+
+
+ 
+
+    const hasUndelayed = activeOrders.some((o) => !o.is_delayed);
+
+
+ 
+
+    if (hasUndelayed) {
+
+      // Toggle ON: only update orders that are NOT yet delayed
+
+      const ids = activeOrders.filter((o) => !o.is_delayed).map((o) => o.id);
+
+      await sb.from('orders').update({ is_delayed: true }).in('id', ids);
+
+    } else {
+
+      // Toggle OFF: all were already delayed — clear all
+
+      const ids = activeOrders.map((o) => o.id);
+
+      await sb.from('orders').update({ is_delayed: false }).in('id', ids);
+
+    }
+
+
+ 
+
+    revalidatePath('/admin');
+
+    revalidatePath('/admin?tab=orders');
 
   }
 
@@ -493,6 +595,36 @@ export default async function DriversSection({ status = 'all', q }: Props) {
                 </button>
 
               </form>
+
+              {/* Bulk delay toggle — only for active drivers with orders */}
+
+              {driver.is_active && (
+
+                <form action={bulkToggleDriverDelay.bind(null, driver.id)}>
+
+                  <button
+
+                    type="submit"
+
+                    className="rounded-full px-3 py-1 text-[11px] font-medium"
+
+                    style={delayedSet.has(driver.id)
+
+                      ? { background: 'rgba(22,160,133,.08)', color: '#16a34a', border: '1px solid rgba(22,160,133,.25)' }
+
+                      : { background: 'rgba(216,177,90,.08)', color: '#b98a3d', border: '1px solid rgba(216,177,90,.3)' }
+
+                    }
+
+                  >
+
+                    {delayedSet.has(driver.id) ? '✅ Clear Delays' : '⏳ Delay Orders'}
+
+                  </button>
+
+                </form>
+
+              )}
 
               <Link
 

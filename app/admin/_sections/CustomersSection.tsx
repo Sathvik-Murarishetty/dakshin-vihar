@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import type { CSSProperties } from 'react';
+
 import { createServiceSupabaseClient } from '@/lib/supabase/server';
 
 
@@ -65,7 +67,7 @@ export default async function CustomersSection({ q, status = 'all' }: Props) {
 
  
 
-  const ROLE_STYLE: Record<string, React.CSSProperties> = {
+  const ROLE_STYLE: Record<string, CSSProperties> = {
 
     admin:    { background: 'rgba(185,58,58,.08)',    color: '#b93a3a' },
 

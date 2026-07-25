@@ -5,6 +5,13 @@ import { createServerSupabaseClient } from '@/lib/supabase/server';
 
  
 
+const BUSY_PREFIX        = '__BUSY__:';
+
+const HIGH_DEMAND_PREFIX = '__HIGH_DEMAND__:';
+
+
+ 
+
 export async function GET() {
 
   const supabase = await createServerSupabaseClient();
@@ -22,13 +29,46 @@ export async function GET() {
 
  
 
+  const isOpen    = data?.is_open ?? true;
+
+  const rawClosed = data?.closed_message ?? '';
+
+
+ 
+
+  // Busy: is_open=true, accepts orders, shows amber delay notice
+
+  const isBusy      = isOpen  && rawClosed.startsWith(BUSY_PREFIX);
+
+  const busyMessage = isBusy  ? rawClosed.slice(BUSY_PREFIX.length) : null;
+
+
+ 
+
+  // High Demand: is_open=false, does NOT accept orders, shows demand notice
+
+  const isHighDemand      = !isOpen && rawClosed.startsWith(HIGH_DEMAND_PREFIX);
+
+  const highDemandMessage = isHighDemand ? rawClosed.slice(HIGH_DEMAND_PREFIX.length) : null;
+
+
+ 
+
   return NextResponse.json({
 
-    is_open:        data?.is_open         ?? true,
+    is_open:             isOpen,
 
-    open_message:   data?.open_message    ?? 'We are open and taking orders!',
+    is_busy:             isBusy,
 
-    closed_message: data?.closed_message  ?? 'We are currently closed.',
+    is_high_demand:      isHighDemand,
+
+    open_message:        data?.open_message ?? 'We are open and taking orders!',
+
+    closed_message:      (!isBusy && !isHighDemand) ? (rawClosed || 'We are currently closed.') : '',
+
+    busy_message:        busyMessage,
+
+    high_demand_message: highDemandMessage,
 
   });
 

@@ -1,10 +1,12 @@
 import Link from 'next/link';
 
+import type { CSSProperties } from 'react';
+
 import { notFound, redirect } from 'next/navigation';
 
 import { revalidatePath } from 'next/cache';
 
-import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
+import { createServiceSupabaseClient } from '@/lib/supabase/server';
 
 
  
@@ -76,7 +78,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
  
 
-  const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  const STATUS_STYLE: Record<string, CSSProperties> = {
 
     confirmed:        { background: 'rgba(22,32,25,.06)',   color: '#4B5A50' },
 

@@ -165,7 +165,7 @@ export default async function MealsSection({ slot = 'all', q }: Props) {
 
             <tr>
 
-              {['Date', 'Slot', 'Name', 'Price', 'Available', 'Actions'].map((h) => (
+              {['Date', 'Slot', 'Name', 'Available', 'Actions'].map((h) => (
 
                 <th
 
@@ -210,8 +210,6 @@ export default async function MealsSection({ slot = 'all', q }: Props) {
                 <td className="px-4 py-3 capitalize" style={{ color: '#4B5A50' }}>{meal.meal_slot}</td>
 
                 <td className="px-4 py-3 font-medium" style={{ color: '#162019' }}>{meal.name}</td>
-
-                <td className="px-4 py-3" style={{ color: '#162019' }}>AED {meal.price}</td>
 
                 <td className="px-4 py-3">
 
@@ -263,7 +261,7 @@ export default async function MealsSection({ slot = 'all', q }: Props) {
 
               <tr>
 
-                <td colSpan={6} className="px-4 py-8 text-center text-[13px]" style={{ color: '#4B5A50' }}>
+                <td colSpan={5} className="px-4 py-8 text-center text-[13px]" style={{ color: '#4B5A50' }}>
 
                   No upcoming meals. Add one to get started.
 

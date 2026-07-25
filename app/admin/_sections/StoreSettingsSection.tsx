@@ -7,6 +7,13 @@ import { redirect } from 'next/navigation';
 
  
 
+const BUSY_PREFIX        = 'BUSY:';
+
+const HIGH_DEMAND_PREFIX = 'HIGH DEMAND:';
+
+
+ 
+
 export default async function StoreSettingsSection() {
 
   const supabase = await createServerSupabaseClient();
@@ -44,15 +51,70 @@ export default async function StoreSettingsSection() {
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb   = await createServerSupabaseClient();
+
+    const mode = formData.get('mode') as string; // 'open' | 'busy' | 'high_demand' | 'closed'
+
+
+ 
+
+    let isOpen        = true;
+
+    let closedMessage = (formData.get('closed_message') as string) || null;
+
+
+ 
+
+    if (mode === 'busy') {
+
+      isOpen        = true;
+
+      const busyMsg = (formData.get('busy_message') as string).trim() || 'We are experiencing high demand. Orders may be slightly delayed.';
+
+      closedMessage = `${BUSY_PREFIX}${busyMsg}`;
+
+    } else if (mode === 'high_demand') {
+
+      isOpen = false;
+
+      const hdMsg = (formData.get('high_demand_message') as string).trim() || 'We are currently experiencing very high demand and cannot accept new orders right now. Please try again shortly.';
+
+      closedMessage = `${HIGH_DEMAND_PREFIX}${hdMsg}`;
+
+    } else if (mode === 'closed') {
+
+      isOpen = false;
+
+      if (closedMessage?.startsWith(BUSY_PREFIX) || closedMessage?.startsWith(HIGH_DEMAND_PREFIX)) {
+
+        closedMessage = 'We are currently closed. Please check back later.';
+
+      }
+
+    } else {
+
+      // open — clear any prefixed message
+
+      isOpen = true;
+
+      if (closedMessage?.startsWith(BUSY_PREFIX) || closedMessage?.startsWith(HIGH_DEMAND_PREFIX)) {
+
+        closedMessage = '';
+
+      }
+
+    }
+
+
+ 
 
     await sb.from('store_settings').update({
 
-      is_open:        formData.get('is_open') === 'true',
+      is_open:        isOpen,
 
       open_message:   (formData.get('open_message') as string) || null,
 
-      closed_message: (formData.get('closed_message') as string) || null,
+      closed_message: closedMessage,
 
       updated_at:     new Date().toISOString(),
 
@@ -67,7 +129,21 @@ export default async function StoreSettingsSection() {
 
  
 
-  const isOpen = settings?.is_open ?? true;
+  const isOpen        = settings?.is_open ?? true;
+
+  const rawClosed     = settings?.closed_message ?? '';
+
+  const isBusy        = isOpen  && rawClosed.startsWith(BUSY_PREFIX);
+
+  const isHighDemand  = !isOpen && rawClosed.startsWith(HIGH_DEMAND_PREFIX);
+
+  const busyMsg       = isBusy       ? rawClosed.slice(BUSY_PREFIX.length)        : '';
+
+  const hdMsg         = isHighDemand ? rawClosed.slice(HIGH_DEMAND_PREFIX.length)  : '';
+
+  const plainClosed   = (!isBusy && !isHighDemand && !isOpen) ? rawClosed : '';
+
+  const mode          = !isOpen ? (isHighDemand ? 'high_demand' : 'closed') : (isBusy ? 'busy' : 'open');
 
 
  
@@ -113,15 +189,21 @@ export default async function StoreSettingsSection() {
 
               className="rounded-full px-3 py-1 text-[12px] font-semibold uppercase tracking-[0.08em]"
 
-              style={isOpen
+              style={
 
-                ? { background: 'rgba(22,160,133,.1)', color: '#16a34a' }
+                mode === 'open'        ? { background: 'rgba(22,160,133,.1)',  color: '#16a34a' } :
 
-                : { background: 'rgba(185,58,58,.08)', color: '#b93a3a' }}
+                mode === 'busy'        ? { background: 'rgba(216,177,90,.1)', color: '#b98a3d' } :
+
+                mode === 'high_demand' ? { background: 'rgba(234,88,12,.08)', color: '#c2410c' } :
+
+                                         { background: 'rgba(185,58,58,.08)', color: '#b93a3a' }
+
+              }
 
             >
 
-              {isOpen ? 'Open' : 'Closed'}
+              {mode === 'open' ? 'Open' : mode === 'busy' ? 'Busy' : mode === 'high_demand' ? 'High Demand' : 'Closed'}
 
             </span>
 
@@ -136,15 +218,19 @@ export default async function StoreSettingsSection() {
 
           <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Store Status</label>
 
-          <select name="is_open" defaultValue={String(isOpen)}
+          <select name="mode" defaultValue={mode}
 
-            className="rounded-[12px] px-4 py-2.5 text-[13px] max-w-xs"
+            className="rounded-[12px] px-4 py-2.5 text-[13px] max-w-sm"
 
             style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}>
 
-            <option value="true">Open — accepting orders</option>
+            <option value="open">✅  Open — accepting orders normally</option>
 
-            <option value="false">Closed — not accepting orders</option>
+            <option value="busy">⏳  Busy — accepts orders, shows delay notice</option>
+
+            <option value="high_demand">🔥  High Demand — does NOT accept orders, shows demand notice</option>
+
+            <option value="closed">🔒  Closed — not accepting orders</option>
 
           </select>
 
@@ -172,11 +258,53 @@ export default async function StoreSettingsSection() {
 
         <div className="flex flex-col gap-1.5">
 
+          <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>
+
+            Busy Notice <span style={{ color: 'rgba(22,32,25,.4)' }}>(shown when Busy — orders still accepted)</span>
+
+          </label>
+
+          <input name="busy_message" type="text"
+
+            defaultValue={busyMsg || 'We are experiencing high demand. Orders may be slightly delayed.'}
+
+            className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+            style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+
+        </div>
+
+
+ 
+
+        <div className="flex flex-col gap-1.5">
+
+          <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>
+
+            High Demand Message <span style={{ color: 'rgba(22,32,25,.4)' }}>(shown when High Demand — orders NOT accepted)</span>
+
+          </label>
+
+          <input name="high_demand_message" type="text"
+
+            defaultValue={hdMsg || 'We are currently experiencing very high demand and cannot accept new orders right now. Please try again shortly.'}
+
+            className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+            style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+
+        </div>
+
+
+ 
+
+        <div className="flex flex-col gap-1.5">
+
           <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Closed Message (shown to customers)</label>
 
           <input name="closed_message" type="text"
 
-            defaultValue={settings?.closed_message ?? 'We are currently closed. Please check back later.'}
+            defaultValue={plainClosed || 'We are currently closed. Please check back later.'}
 
             className="rounded-[12px] px-4 py-2.5 text-[13px]"
 

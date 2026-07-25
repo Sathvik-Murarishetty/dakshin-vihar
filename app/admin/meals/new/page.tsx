@@ -218,7 +218,7 @@ export default function NewMealPage() {
 
               <option key={m.id} value={m.id}>
 
-                {m.name} · {m.meal_slot} · AED {m.price}
+                {m.name} · {m.meal_slot}
 
               </option>
 

@@ -14,7 +14,6 @@ import ContactSection from './_sections/ContactSection';
 import StaffSection from './_sections/StaffSection';
 import CustomersSection from './_sections/CustomersSection';
 import StoreSettingsSection from './_sections/StoreSettingsSection';
-import InventorySection from './_sections/InventorySection';
 import AccountSection from './_sections/AccountSection';
 
 type AdminSearchParams = {
@@ -118,14 +117,7 @@ export default async function AdminPage({
       return <StoreSettingsSection />;
 
     case 'inventory':
-      return (
-        <InventorySection
-          role={role}
-          category={params.category}
-          q={params.q}
-          period={params.period}
-        />
-      );
+      redirect('/admin/inventory');
 
     case 'account':
       return (
