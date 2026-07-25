@@ -174,7 +174,7 @@ export default function Footer() {
 
               style={{ background: 'rgba(216,177,90,.08)', border: '1px solid rgba(216,177,90,.15)' }}>
 
-              <span className="text-[11px] font-medium" style={{ color: 'rgba(216,177,90,.7)' }}>Cash on Delivery · AED 3 packaging & delivery fee</span>
+              <span className="text-[11px] font-medium" style={{ color: 'rgba(216,177,90,.7)' }}>Cash on Delivery · AED 3 Packaging & Delivery Fee</span>
 
             </div>
 

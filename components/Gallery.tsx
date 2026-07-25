@@ -4,28 +4,28 @@ const GALLERY = [
   {
     label: 'Breakfast',
     title: 'Traditional Breakfast',
-    image: '/images/gallery/breakfast.jpg',
+    image: '/images/gallery/breakfast.png',
     className: 'md:row-span-2',
   },
   {
     label: 'Coffee',
     title: 'Filter Coffee',
-    image: '/images/gallery/coffee.jpg',
+    image: '/images/gallery/coffee.png',
   },
   {
     label: 'Meals',
     title: 'South Indian Meals',
-    image: '/images/gallery/meals.jpg',
+    image: '/images/gallery/meals.png',
   },
   {
     label: 'Desserts',
     title: 'Traditional Sweets',
-    image: '/images/gallery/desserts.jpg',
+    image: '/images/gallery/desserts.png',
   },
   {
     label: 'Specials',
     title: "Chef's Specials",
-    image: '/images/gallery/specials.jpg',
+    image: '/images/gallery/specials.png',
   },
 ];
 

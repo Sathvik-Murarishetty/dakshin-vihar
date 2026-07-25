@@ -77,13 +77,9 @@ export default function ContactSection() {
                     color: '#162019',
                   }}
                 >
-                  Kitchen Park,
+                  Kitchen Park, Nadd Hessa,
                   <br />
-                  Nadd Hessa,
-                  <br />
-                  Dubai Silicon Oasis,
-                  <br />
-                  Dubai
+                  Dubai Silicon Oasis, Dubai
                 </p>
 
               </div>

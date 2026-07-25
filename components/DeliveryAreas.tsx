@@ -102,7 +102,7 @@ export default function DeliveryAreas() {
         <div className="mt-12 text-center">
 
           <Link
-            href="/contact"
+            href="/#contact"
             className="btn-gold inline-flex items-center gap-2"
           >
             Check Delivery Availability

@@ -70,7 +70,9 @@ export default function OurMenuLayout({ categories }: { categories: Category[] }
 
  
 
-  // Auto-scroll sidebar nav so the active category button stays visible
+  // Auto-scroll the active sidebar button into view.
+
+  // Uses direct scrollTop — NEVER scrollIntoView to avoid feedback loop with IntersectionObserver.
 
   useEffect(() => {
 
@@ -80,7 +82,15 @@ export default function OurMenuLayout({ categories }: { categories: Category[] }
 
     const btn = nav.querySelector<HTMLElement>(`[data-cat="${activeId}"]`);
 
-    if (btn) btn.scrollIntoView({ block: 'nearest' });
+    if (!btn) return;
+
+    const top    = btn.offsetTop;
+
+    const bottom = top + btn.offsetHeight;
+
+    if (top < nav.scrollTop) nav.scrollTop = top - 8;
+
+    else if (bottom > nav.scrollTop + nav.offsetHeight) nav.scrollTop = bottom - nav.offsetHeight + 8;
 
   }, [activeId]);
 
@@ -130,11 +140,23 @@ export default function OurMenuLayout({ categories }: { categories: Category[] }
 
         if (!el) return;
 
+        const mobile = prefix === 'mob-sec';
+
         const obs = new IntersectionObserver(
 
           ([entry]) => { if (entry.isIntersecting) setActiveId(cat.id); },
 
-          { rootMargin: '-20% 0px -65% 0px', threshold: 0 }
+          {
+
+            // Mobile: navbar(96) + dropdown bar(~52) = 148px top; desktop: navbar(96) + buffer = 112px
+
+            // Use -25% bottom margin so there's a generous 60%+ trigger window
+
+            rootMargin: mobile ? '-160px 0px -25% 0px' : '-112px 0px -25% 0px',
+
+            threshold: 0,
+
+          }
 
         );
 
@@ -146,7 +168,37 @@ export default function OurMenuLayout({ categories }: { categories: Category[] }
 
     });
 
-    return () => observers.forEach((o) => o.disconnect());
+
+ 
+
+    // Fallback: when user scrolls to bottom, mark last category as active
+
+    const lastId = categories[categories.length - 1]?.id;
+
+    const handleScrollBottom = () => {
+
+      const scrollEl = document.scrollingElement || document.documentElement;
+
+      if (lastId && scrollEl.scrollTop + window.innerHeight >= scrollEl.scrollHeight - 80) {
+
+        setActiveId(lastId);
+
+      }
+
+    };
+
+    window.addEventListener('scroll', handleScrollBottom, { passive: true });
+
+
+ 
+
+    return () => {
+
+      observers.forEach((o) => o.disconnect());
+
+      window.removeEventListener('scroll', handleScrollBottom);
+
+    };
 
   }, [categories]);
 
@@ -163,13 +215,21 @@ export default function OurMenuLayout({ categories }: { categories: Category[] }
 
     if (!el) return;
 
-    const top = el.getBoundingClientRect().top + window.scrollY - (isDesktop ? 112 : 160);
-
-    window.scrollTo({ top, behavior: 'instant' as ScrollBehavior });
-
     setActiveId(id);
 
     setDropdownOpen(false);
+
+    requestAnimationFrame(() => {
+
+      const scrollEl = (document.scrollingElement || document.documentElement) as HTMLElement;
+
+      const offset = isDesktop ? 112 : 160;
+
+      const target = el.getBoundingClientRect().top + scrollEl.scrollTop - offset;
+
+      scrollEl.scrollTop = Math.max(0, target);
+
+    });
 
   }, []);
 

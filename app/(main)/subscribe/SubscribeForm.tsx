@@ -16,9 +16,9 @@ import LocationPicker from '@/components/LocationPicker';
 
 const PLANS = [
 
-  { id: 'plan_lunch',  name: 'Lunch Daily',    price: 250, desc: 'Fresh lunch every day.' },
+  { id: 'plan_lunch',  name: 'Lunch Daily',    price: 250, desc: 'Authentic & Fresh lunch every day.' },
 
-  { id: 'plan_dinner', name: 'Dinner Daily',   price: 250, desc: 'Authentic dinner every evening.' },
+  { id: 'plan_dinner', name: 'Dinner Daily',   price: 250, desc: 'Authentic & Fresh dinner every evening.' },
 
   { id: 'plan_both',   name: 'Lunch + Dinner', price: 450, desc: 'Both meals, every day. Best value.' },
 
@@ -31,7 +31,7 @@ const DIET_OPTIONS = [
 
   { key: 'veg'    as const, label: 'Vegetarian',     surcharge: 0  },
 
-  { key: 'non-veg'as const, label: 'Non-Vegetarian', surcharge: 30 },
+  { key: 'non-veg'as const, label: 'Non-Vegetarian', surcharge: 50 },
 
 ];
 
@@ -429,7 +429,7 @@ export default function SubscribeForm({ profile }: Props) {
 
           {PLANS.map((p) => {
 
-            const dietSurcharge = dietType === 'non-veg' ? 30 : 0;
+            const dietSurcharge = dietType === 'non-veg' ? 50 : 0;
 
             const packSurcharge = packaging === 'microwave' ? 50 : 0;
 

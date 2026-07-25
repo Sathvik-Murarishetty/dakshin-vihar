@@ -96,7 +96,13 @@
 
     text-rendering: optimizeLegibility;
 
-    overflow-x: hidden;
+    /* overflow-x:clip clips horizontal overflow WITHOUT creating a scroll container.
+
+       overflow-x:hidden forces overflow-y:auto which makes html a scroll container
+
+       and breaks position:sticky + window.scrollY in Chrome/Safari. */
+
+    overflow-x: clip;
 
   }
 
@@ -111,7 +117,11 @@
 
     color: var(--color-stone);
 
-    overflow-x: hidden;
+    /* overflow-x NOT set here — html already has overflow-x:hidden which is sufficient.
+
+       Setting it on body too would make body a scroll container, breaking position:sticky
+
+       and window.scrollTo across the site. */
 
   }
 
@@ -497,4 +507,82 @@ html.order-cart-active #site-header {
 
   .hero-cta  { animation: dv-hero-word  700ms cubic-bezier(.16,.84,.44,1)  700ms both; }
 
+}
+
+/* ── Testimonials Infinite Marquee ────────────────────────── */
+
+@keyframes testimonials-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.testimonials-marquee {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+
+  /* Soft fade on both sides */
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    black 8%,
+    black 92%,
+    transparent 100%
+  );
+}
+
+.testimonials-track {
+  display: flex;
+  align-items: stretch;
+  gap: 1.5rem;
+  width: max-content;
+  will-change: transform;
+  animation: testimonials-scroll 38s linear infinite;
+}
+
+.testimonials-track:hover {
+  animation-play-state: paused;
+}
+
+.testimonial-card {
+  flex: 0 0 340px;
+}
+
+/* Mobile */
+
+@media (width < 768px) {
+  .testimonial-card {
+    flex-basis: 300px;
+  }
+
+  .testimonials-track {
+    gap: 1rem;
+    animation-duration: 28s;
+  }
+}
+
+/* Accessibility */
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonials-track {
+    animation: none;
+    transform: none;
+  }
+
+  .testimonial-card {
+    transition: none;
+  }
 }

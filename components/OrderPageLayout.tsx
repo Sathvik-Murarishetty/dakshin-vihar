@@ -29,24 +29,86 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
   const [activeId,     setActiveId]     = useState(categories[0]?.id ?? '');
 
-  const navRef      = useRef<HTMLElement>(null);
+  const mobileNavRef  = useRef<HTMLDivElement>(null);
 
-  const cartTotal   = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const desktopNavRef = useRef<HTMLElement>(null);
+
+  const cartTotal     = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
 
  
 
-  // Auto-scroll strip so the active category tab stays visible
+  // Store status banner
+
+  const [storeStatus, setStoreStatus] = useState<{
+
+    is_open: boolean; is_busy: boolean; is_high_demand: boolean;
+
+    closed_message?: string; busy_message?: string; high_demand_message?: string;
+
+  } | null>(null);
+
+
+ 
 
   useEffect(() => {
 
-    const nav = navRef.current;
+    fetch('/api/store')
+
+      .then((r) => r.json())
+
+      .then(setStoreStatus)
+
+      .catch(() => {});
+
+  }, []);
+
+
+ 
+
+  // Auto-scroll the active pill/button into view inside the nav strip or sidebar.
+
+  // Uses direct scrollLeft/scrollTop — NEVER scrollIntoView which can
+
+  // cause page-level scrolling and create a feedback loop with IntersectionObserver.
+
+  useEffect(() => {
+
+    const isMobile = window.innerWidth < 1024;
+
+    const nav = isMobile ? mobileNavRef.current : desktopNavRef.current;
 
     if (!nav) return;
 
     const btn = nav.querySelector<HTMLElement>(`[data-cat="${activeId}"]`);
 
-    if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (!btn) return;
+
+    if (isMobile) {
+
+      // Horizontal strip: scroll left so the button is visible
+
+      const left = btn.offsetLeft;
+
+      const right = left + btn.offsetWidth;
+
+      if (left < nav.scrollLeft) nav.scrollLeft = left - 16;
+
+      else if (right > nav.scrollLeft + nav.offsetWidth) nav.scrollLeft = right - nav.offsetWidth + 16;
+
+    } else {
+
+      // Vertical sidebar: scroll top so the button is visible
+
+      const top = btn.offsetTop;
+
+      const bottom = top + btn.offsetHeight;
+
+      if (top < nav.scrollTop) nav.scrollTop = top - 8;
+
+      else if (bottom > nav.scrollTop + nav.offsetHeight) nav.scrollTop = bottom - nav.offsetHeight + 8;
+
+    }
 
   }, [activeId]);
 
@@ -64,13 +126,6 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
  
 
-    // Use separate rootMargins to account for sticky bars on each breakpoint
-
-    const isMobile = () => window.innerWidth < 1024;
-
-
- 
-
     ['mob-cat', 'dsk-cat'].forEach((prefix) => {
 
       categories.forEach((cat) => {
@@ -78,10 +133,6 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
         const el = document.getElementById(`${prefix}-${cat.id}`);
 
         if (!el) return;
-
-        // Mobile: navbar (96px) + dropdown bar (~52px) → ~148px top offset; use looser margin
-
-        // Desktop: navbar (96px) + category sidebar header (48px) → offset
 
         const mobile = prefix === 'mob-cat';
 
@@ -91,11 +142,7 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
           {
 
-            rootMargin: mobile
-
-              ? '-148px 0px -40% 0px'   // generous window so mobile triggers reliably
-
-              : '-112px 0px -50% 0px',
+            rootMargin: mobile ? '-148px 0px -25% 0px' : '-112px 0px -25% 0px',
 
             threshold: 0,
 
@@ -111,7 +158,37 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
     });
 
-    return () => observers.forEach((o) => o.disconnect());
+
+ 
+
+    // Fallback: when scrolled to the very bottom, activate the last category
+
+    const lastId = categories[categories.length - 1]?.id;
+
+    const handleScrollBottom = () => {
+
+      const scrollEl = document.scrollingElement || document.documentElement;
+
+      if (lastId && scrollEl.scrollTop + window.innerHeight >= scrollEl.scrollHeight - 80) {
+
+        setActiveId(lastId);
+
+      }
+
+    };
+
+    window.addEventListener('scroll', handleScrollBottom, { passive: true });
+
+
+ 
+
+    return () => {
+
+      observers.forEach((o) => o.disconnect());
+
+      window.removeEventListener('scroll', handleScrollBottom);
+
+    };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
 
@@ -119,6 +196,8 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
 
  
+
+  // scrollTo: direct scrollTop assignment inside rAF so it never conflicts with touch events
 
   const scrollTo = useCallback((id: string) => {
 
@@ -128,11 +207,19 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
     if (!el) return;
 
-    const top = el.getBoundingClientRect().top + window.scrollY - (isDesktop ? 112 : 160);
-
-    window.scrollTo({ top, behavior: 'instant' as ScrollBehavior });
-
     setActiveId(id);
+
+    requestAnimationFrame(() => {
+
+      const scrollEl = (document.scrollingElement || document.documentElement) as HTMLElement;
+
+      const offset = isDesktop ? 112 : 160;
+
+      const target = el.getBoundingClientRect().top + scrollEl.scrollTop - offset;
+
+      scrollEl.scrollTop = Math.max(0, target);
+
+    });
 
   }, []);
 
@@ -167,6 +254,59 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
  
 
+      {/* ── Store status banners ────────────────────── */}
+
+      {storeStatus && !storeStatus.is_open && !storeStatus.is_high_demand && (
+
+        <div className="container-dv pt-4">
+
+          <div className="rounded-[16px] px-5 py-4 text-[13px] font-medium"
+
+            style={{ background: 'rgba(185,58,58,.07)', border: '1px solid rgba(185,58,58,.2)', color: '#b93a3a' }}>
+
+            🔒 {storeStatus.closed_message ?? 'We are currently closed and not accepting orders.'}
+
+          </div>
+
+        </div>
+
+      )}
+
+      {storeStatus?.is_high_demand && (
+
+        <div className="container-dv pt-4">
+
+          <div className="rounded-[16px] px-5 py-4 text-[13px] font-medium"
+
+            style={{ background: 'rgba(234,88,12,.07)', border: '1px solid rgba(234,88,12,.25)', color: '#c2410c' }}>
+
+            🔥 {storeStatus.high_demand_message ?? 'We are experiencing very high demand and cannot accept new orders right now. Please try again shortly.'}
+
+          </div>
+
+        </div>
+
+      )}
+
+      {storeStatus?.is_busy && (
+
+        <div className="container-dv pt-4">
+
+          <div className="rounded-[16px] px-5 py-4 text-[12px] leading-relaxed"
+
+            style={{ background: 'rgba(216,177,90,.07)', border: '1px solid rgba(216,177,90,.3)', color: '#b98a3d' }}>
+
+            ⏳ {storeStatus.busy_message ?? 'We are experiencing high demand. Orders may be slightly delayed.'}
+
+          </div>
+
+        </div>
+
+      )}
+
+
+ 
+
       {/* ── Mobile: horizontal scrollable category strip ─── */}
 
       <div className="lg:hidden sticky top-24 z-30"
@@ -175,7 +315,7 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
         <div
 
-          ref={navRef as React.RefObject<HTMLDivElement>}
+          ref={mobileNavRef}
 
           className="flex gap-1.5 overflow-x-auto py-2.5 px-4"
 
@@ -228,30 +368,6 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
       <div className="lg:hidden container-dv pb-36 pt-8">
 
-        {/* Delivery region notice */}
-
-        <div className="mb-6 flex items-start gap-3 rounded-[16px] px-4 py-3.5"
-
-          style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
-
-          <span className="mt-0.5 shrink-0 text-[16px]">📍</span>
-
-          <p className="text-[12px] leading-relaxed" style={{ color: '#4B5A50' }}>
-
-            We currently deliver to{' '}
-
-            <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
-
-            <strong style={{ color: '#162019' }}>International City</strong>{' '}and{' '}
-
-            <strong style={{ color: '#162019' }}>Academic City</strong> only.{' '}
-
-            Delivery &amp; packaging: <strong style={{ color: '#162019' }}>AED 3</strong>.
-
-          </p>
-
-        </div>
-
         {categories.map((cat) => (
 
           <section key={cat.id} id={`mob-cat-${cat.id}`} className="scroll-mt-40 mb-10">
@@ -303,7 +419,7 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
 
           </div>
 
-          <nav ref={navRef} className="flex flex-col gap-0.5 px-3 pb-8 flex-1 overflow-y-auto">
+          <nav ref={desktopNavRef} className="flex flex-col gap-0.5 px-3 pb-8 flex-1 overflow-y-auto">
 
             {categories.map((cat) => {
 
@@ -357,30 +473,6 @@ export default function OrderPageLayout({ categories }: { categories: CategoryWi
         <main className="flex-1 min-w-0">
 
           <div className="px-6 pb-32">
-
-            {/* Delivery region notice */}
-
-            <div className="mb-6 flex items-start gap-3 rounded-[16px] px-4 py-3.5"
-
-              style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
-
-              <span className="mt-0.5 shrink-0 text-[15px]">📍</span>
-
-              <p className="text-[12px] leading-relaxed" style={{ color: '#4B5A50' }}>
-
-                We currently deliver to{' '}
-
-                <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
-
-                <strong style={{ color: '#162019' }}>International City</strong>{' '}and{' '}
-
-                <strong style={{ color: '#162019' }}>Academic City</strong> only.{' '}
-
-              Delivery &amp; packaging: <strong style={{ color: '#162019' }}>AED 3</strong>.
-
-              </p>
-
-            </div>
 
             {categories.map((cat) => (
 

@@ -50,7 +50,7 @@ interface Sub       { id: string; plan: Plan | null; status: string; diet_type: 
 
 interface OrderItem { id: string; quantity: number; unit_price: number; subtotal: number; menu_item: { name?: string } | null; meal: { name?: string; meal_slot?: string } | null }
 
-interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; source?: string; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
+interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; source?: string; is_delayed?: boolean; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
 
 interface Profile   { full_name?: string | null; email?: string; phone?: string | null }
 
@@ -90,6 +90,23 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   function toggleOrder(id: string) { setExpandedOrderId((prev) => (prev === id ? null : id)); }
+
+
+ 
+
+  // ── Orders filter ─────────────────────────────────────────────
+
+  const [orderFilter, setOrderFilter] = useState<'all' | 'orders' | 'plan'>('all');
+
+  const filteredOrders = (orders ?? []).filter((o) => {
+
+    if (orderFilter === 'orders') return o.source !== 'subscription';
+
+    if (orderFilter === 'plan')   return o.source === 'subscription';
+
+    return true;
+
+  });
 
 
  
@@ -494,6 +511,27 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
         <div className="flex flex-col gap-6">
 
+          {/* Advance-notice reminder */}
+
+          <div className="flex items-start gap-3 rounded-[16px] px-4 py-3.5"
+
+            style={{ background: 'rgba(216,177,90,.07)', border: '1px solid rgba(216,177,90,.3)' }}>
+
+            <p className="text-[12px] leading-relaxed" style={{ color: '#b98a3d' }}>
+
+              <strong style={{ color: '#162019' }}>Planning a change?</strong>{' '}
+
+              If you need to update, pause, or cancel your plan, please let us know at least{' '}
+
+              <strong style={{ color: '#162019' }}>one day in advance</strong> so we can arrange it in time.
+
+            </p>
+
+          </div>
+
+
+ 
+
           {!subscriptions?.length && (
 
             <div className="rounded-[24px] p-10 text-center" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
@@ -595,7 +633,42 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
         <div className="flex flex-col gap-3">
 
-          {!orders?.length && (
+          {/* Filter pills */}
+
+          <div className="flex gap-2 flex-wrap">
+
+            {([
+
+              { key: 'all',    label: 'All' },
+
+              { key: 'orders', label: 'Orders' },
+
+              { key: 'plan',   label: 'Subscription Meals' },
+
+            ] as { key: typeof orderFilter; label: string }[]).map(({ key, label }) => (
+
+              <button key={key} onClick={() => setOrderFilter(key)}
+
+                className="rounded-full px-4 py-1.5 text-[12px] font-semibold transition-all duration-150"
+
+                style={orderFilter === key
+
+                  ? { background: '#162019', color: '#F6F2E9' }
+
+                  : { border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+                {label}
+
+              </button>
+
+            ))}
+
+          </div>
+
+
+ 
+
+          {!filteredOrders.length && (
 
             <div className="rounded-[24px] p-10 text-center" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
 
@@ -610,7 +683,7 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
  
 
-          {orders?.map((order) => {
+          {filteredOrders.map((order) => {
 
             const isOpen        = expandedOrderId === order.id;
 
@@ -686,6 +759,18 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
                       </span>
 
+                      {order.is_delayed && (
+
+                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
+
+                          style={{ background: 'rgba(216,177,90,.12)', color: '#b98a3d', border: '1px solid rgba(216,177,90,.3)' }}>
+
+                          ⏳ Delayed
+
+                        </span>
+
+                      )}
+
                       {isSub && (
 
                         <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em]"
@@ -753,6 +838,25 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
                         <p className="text-[13px] font-semibold" style={{ color: '#b93a3a' }}>Order Cancelled</p>
 
                         <p className="mt-0.5 text-[12px]" style={{ color: 'rgba(185,58,58,.7)' }}>This order has been cancelled. If you were charged, contact support.</p>
+
+                      </div>
+
+                    )}
+
+
+ 
+
+                    {/* Delayed delivery notice */}
+
+                    {order.is_delayed && order.status !== 'canceled' && order.status !== 'delivered' && (
+
+                      <div className="rounded-[14px] px-5 py-4"
+
+                        style={{ background: 'rgba(216,177,90,.07)', border: '1px solid rgba(216,177,90,.3)' }}>
+
+                        <p className="text-[13px] font-semibold" style={{ color: '#b98a3d' }}>⏳ Delivery Delayed</p>
+
+                        <p className="mt-0.5 text-[12px]" style={{ color: 'rgba(180,130,60,.8)' }}>Your delivery is taking longer than expected. We apologise for the delay — our driver is on the way.</p>
 
                       </div>
 

@@ -40,14 +40,9 @@ export default function Testimonials() {
       style={{ background: '#162019' }}
     >
       <div className="section-pad overflow-hidden">
-
         {/* Heading */}
-
         <div className="container-dv mb-14 text-center">
-
-          <p className="overline mb-5">
-            Testimonials
-          </p>
+          <p className="overline mb-5">Testimonials</p>
 
           <h2
             className="font-display font-semibold leading-none"
@@ -73,36 +68,26 @@ export default function Testimonials() {
             our guests trust Dakshin Vihar for authentic
             South Indian flavours every day.
           </p>
-
         </div>
 
-        {/* Marquee */}
-
-        <div className="overflow-hidden">
-
-          <div className="marquee-track flex gap-6">
-
+        {/* Infinite Marquee */}
+        <div className="testimonials-marquee">
+          <div className="testimonials-track">
             {reviews.map((review, index) => (
-
               <article
                 key={`${review.name}-${index}`}
-                className="w-[340px] shrink-0 rounded-card p-8"
+                className="testimonial-card rounded-card p-8"
                 style={{
                   background: '#1E2A22',
                   border: '1px solid rgba(216,177,90,.10)',
                 }}
               >
-
-                {/* Stars */}
-
                 <div
                   className="mb-5 text-lg tracking-[3px]"
                   style={{ color: '#D8B15A' }}
                 >
                   ★★★★★
                 </div>
-
-                {/* Review */}
 
                 <p
                   className="text-[15px] leading-8"
@@ -113,16 +98,12 @@ export default function Testimonials() {
                   "{review.review}"
                 </p>
 
-                {/* Divider */}
-
                 <div
                   className="my-6 h-px w-12"
                   style={{
                     background: 'rgba(216,177,90,.25)',
                   }}
                 />
-
-                {/* User */}
 
                 <h3
                   className="font-display text-[20px]"
@@ -141,15 +122,10 @@ export default function Testimonials() {
                 >
                   {review.location}
                 </p>
-
               </article>
-
             ))}
-
           </div>
-
         </div>
-
       </div>
     </section>
   );

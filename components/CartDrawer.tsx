@@ -82,6 +82,20 @@ export default function CartDrawer() {
 
   const [validating,   setValidating]   = useState(false);
 
+  // Store status — fetched when the cart opens
+
+  const [storeOpen,        setStoreOpen]        = useState<boolean | null>(null);
+
+  const [storeClosedMsg,   setStoreClosedMsg]   = useState<string | null>(null);
+
+  const [storeBusy,        setStoreBusy]        = useState(false);
+
+  const [storeBusyMsg,     setStoreBusyMsg]     = useState<string | null>(null);
+
+  const [storeHighDemand,  setStoreHighDemand]  = useState(false);
+
+  const [storeHDMsg,       setStoreHDMsg]       = useState<string | null>(null);
+
 
  
 
@@ -139,6 +153,33 @@ export default function CartDrawer() {
       })
 
       .catch(() => {});
+
+
+ 
+
+    // Check store open/closed status upfront so the user sees it immediately
+
+    fetch('/api/store')
+
+      .then((r) => r.json())
+
+      .then((data) => {
+
+        setStoreOpen(!!data.is_open);
+
+        setStoreBusy(!!data.is_busy);
+
+        setStoreBusyMsg(data.busy_message ?? null);
+
+        setStoreHighDemand(!!data.is_high_demand);
+
+        setStoreHDMsg(data.high_demand_message ?? null);
+
+        setStoreClosedMsg(!data.is_open && !data.is_high_demand ? (data.closed_message ?? 'The store is currently closed.') : null);
+
+      })
+
+      .catch(() => { setStoreOpen(true); }); // fail-open: don't block on network error
 
   }, [isCartOpen]);
 
@@ -299,25 +340,6 @@ export default function CartDrawer() {
  
 
     try {
-
-      // ── Store open check ─────────────────────────────
-
-      const storeRes  = await fetch('/api/store');
-
-      const storeData = await storeRes.json();
-
-      if (!storeData.is_open) {
-
-        setError(storeData.closed_message ?? 'The store is currently closed. Please try again later.');
-
-        setPlacing(false);
-
-        return;
-
-      }
-
-
- 
 
       // Save contact info to profile if newly entered
 
@@ -977,6 +999,33 @@ export default function CartDrawer() {
 
  
 
+              {/* ── Delivery region notice ──────────────────── */}
+
+              <div className="mb-4 rounded-[12px] px-4 py-3 text-[12px] leading-relaxed"
+
+                style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+
+                <p className="font-semibold mb-0.5" style={{ color: '#162019' }}>📍 Delivery Areas</p>
+
+                <p style={{ color: '#4B5A50' }}>
+
+                  We currently deliver to <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
+
+                  <strong style={{ color: '#162019' }}>International City</strong>, and{' '}
+
+                  <strong style={{ color: '#162019' }}>Academic City</strong>, and{' '}
+
+                  <strong style={{ color: '#162019' }}>Dubai Land</strong>, and{' '}
+
+                  <strong style={{ color: '#162019' }}>Liwan Circle</strong> only.
+
+                </p>
+
+              </div>
+
+
+ 
+
               {/* ── Notes ─────────────────────────────────── */}
 
               <div className="mb-4">
@@ -1159,29 +1208,53 @@ export default function CartDrawer() {
 
  
 
-              {/* Delivery region notice */}
+              {/* Store busy notice — amber, order still allowed */}
 
-              <div className="mb-3 rounded-[12px] px-4 py-3 text-[12px] leading-relaxed"
+              {storeBusy && (
 
-                style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+                <div className="mb-3 rounded-[12px] px-4 py-3 text-[12px] leading-relaxed"
 
-                <p className="font-semibold mb-0.5" style={{ color: '#162019' }}>
+                  style={{ background: 'rgba(216,177,90,.08)', border: '1px solid rgba(216,177,90,.35)', color: '#b98a3d' }}>
 
-                  📍 Delivery Areas
+                  ⏳ {storeBusyMsg ?? 'We are experiencing high demand. Orders may be slightly delayed.'}
 
-                </p>
+                </div>
 
-                <p style={{ color: '#4B5A50' }}>
+              )}
 
-                  We currently deliver to <strong style={{ color: '#162019' }}>Dubai Silicon Oasis</strong>,{' '}
 
-                  <strong style={{ color: '#162019' }}>International City</strong>, and{' '}
+ 
 
-                  <strong style={{ color: '#162019' }}>Academic City</strong> only.
+              {/* High demand notice — orange, order BLOCKED */}
 
-                </p>
+              {storeHighDemand && (
 
-              </div>
+                <div className="mb-3 rounded-[12px] px-4 py-3 text-[13px] font-medium"
+
+                  style={{ background: 'rgba(234,88,12,.07)', border: '1px solid rgba(234,88,12,.25)', color: '#c2410c' }}>
+
+                  🔥 {storeHDMsg ?? 'We are currently experiencing very high demand and cannot accept new orders right now. Please try again shortly.'}
+
+                </div>
+
+              )}
+
+
+ 
+
+              {/* Store closed banner */}
+
+              {storeOpen === false && !storeHighDemand && (
+
+                <div className="mb-3 rounded-[12px] px-4 py-3 text-[13px] font-medium"
+
+                  style={{ background: 'rgba(185,58,58,.08)', border: '1px solid rgba(185,58,58,.2)', color: '#b93a3a' }}>
+
+                  🔒 {storeClosedMsg}
+
+                </div>
+
+              )}
 
 
  
@@ -1192,9 +1265,11 @@ export default function CartDrawer() {
 
                   onClick={handleCheckout}
 
-                  disabled={placing}
+                  disabled={placing || storeOpen === false || storeHighDemand}
 
                   className="btn-gold w-full justify-center"
+
+                  style={(storeOpen === false || storeHighDemand) ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
 
                 >
 

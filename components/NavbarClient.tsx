@@ -24,13 +24,9 @@ import LogoMark from '@/components/LogoMark';
 
 const NAV_LINKS = [
 
-  { label: 'Our Story',    href: '/#story'    },
-
   { label: "Today's Menu", href: '/menu'      },
 
-  { label: 'Our Menu',     href: '/our-menu'  },
-
-  { label: 'Subscribe',    href: '/subscribe' },
+  { label: 'Meal Plans',    href: '/subscribe' },
 
   { label: 'Contact',      href: '/#contact'  },
 
@@ -186,7 +182,7 @@ export default function NavbarClient({ user }: Props) {
 
           transition: `padding 300ms ${EASE}`,
 
-          display: isCartOpen ? 'none' : undefined,
+          display: (isCartOpen || mobileOpen) ? 'none' : undefined,
 
         }}
 

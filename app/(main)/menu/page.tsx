@@ -256,7 +256,7 @@ export default function MenuPage() {
 
           <p className="text-[13px] font-semibold" style={{ color: '#162019' }}>Want these meals delivered every day?</p>
 
-          <p className="text-[12px]" style={{ color: '#4B5A50' }}>From AED 250/mo · cancel anytime</p>
+          <p className="text-[12px]" style={{ color: '#4B5A50' }}>From AED 1,499/mo · cancel anytime</p>
 
         </div>
 
@@ -388,57 +388,6 @@ export default function MenuPage() {
         );
 
       })}
-
-
- 
-
-      {/* ── Bottom subscribe CTA ──────────────────────── */}
-
-      {!loading && meals.length > 0 && (
-
-        <div
-
-          className="mt-4 rounded-[24px] p-7 sm:p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6"
-
-          style={{ background: '#162019' }}
-
-        >
-
-          <div>
-
-            <h3 className="font-display text-[24px] font-semibold" style={{ color: '#F6F2E9' }}>
-
-              Get these meals every day
-
-            </h3>
-
-            <p className="mt-1.5 text-[14px]" style={{ color: 'rgba(246,242,233,.5)' }}>
-
-              Subscribe monthly — lunch, dinner, or both. Fresh, delivered, from AED 250/mo.
-
-            </p>
-
-          </div>
-
-          <div className="flex flex-wrap gap-3 shrink-0">
-
-            <Link href="/subscribe" className="btn-gold">Subscribe Now</Link>
-
-            <Link href="/order"
-
-              className="rounded-full px-6 py-3 text-[14px] font-semibold"
-
-              style={{ border: '1px solid rgba(246,242,233,.18)', color: 'rgba(246,242,233,.65)' }}>
-
-              Order à la carte
-
-            </Link>
-
-          </div>
-
-        </div>
-
-      )}
 
     </div>
 
