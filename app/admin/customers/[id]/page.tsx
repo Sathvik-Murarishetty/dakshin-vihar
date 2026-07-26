@@ -6,7 +6,7 @@ import { notFound, redirect } from 'next/navigation';
 
 import { revalidatePath } from 'next/cache';
 
-import { createServiceSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
 
  
@@ -20,6 +20,22 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   const { id } = await params;
 
+
+ 
+
+  // Session check — admin layout already guards access, but double-check
+
+  const session = await createServerSupabaseClient();
+
+  const { data: { user } } = await session.auth.getUser();
+
+  if (!user) redirect('/login?redirect=/admin');
+
+
+ 
+
+  // Service client bypasses RLS for reading any profile
+
   const supabase = createServiceSupabaseClient();
 
 
@@ -27,7 +43,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
   const [{ data: profile }, { data: orders }, { data: subscriptions }] = await Promise.all([
 
-    supabase.from('profiles').select('*').eq('id', id).single(),
+    supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
 
     supabase.from('orders')
 
@@ -37,7 +53,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
       .order('created_at', { ascending: false })
 
-      .limit(10),
+      .limit(50),
 
     supabase.from('subscriptions')
 

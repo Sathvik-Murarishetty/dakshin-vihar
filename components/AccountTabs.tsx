@@ -517,13 +517,15 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
             style={{ background: 'rgba(216,177,90,.07)', border: '1px solid rgba(216,177,90,.3)' }}>
 
+            <span className="mt-0.5 shrink-0 text-[16px]">📋</span>
+
             <p className="text-[12px] leading-relaxed" style={{ color: '#b98a3d' }}>
 
               <strong style={{ color: '#162019' }}>Planning a change?</strong>{' '}
 
               If you need to update, pause, or cancel your plan, please let us know at least{' '}
 
-              <strong style={{ color: '#162019' }}>one day in advance</strong> so we can arrange it in time.
+              <strong style={{ color: '#162019' }}>one day in advance</strong>so we can arrange it in time.
 
             </p>
 
@@ -641,7 +643,7 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
               { key: 'all',    label: 'All' },
 
-              { key: 'orders', label: 'Orders' },
+              { key: 'orders', label: 'A la Carte' },
 
               { key: 'plan',   label: 'Subscription Meals' },
 
@@ -1027,9 +1029,9 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
  
 
-                    {/* Delivery driver */}
+                    {/* Delivery driver — only while order is actively in-transit */}
 
-                    {order.driver && (
+                    {order.driver && order.status === 'out_for_delivery' && (
 
                       <div>
 

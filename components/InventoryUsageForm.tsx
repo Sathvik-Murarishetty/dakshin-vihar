@@ -55,6 +55,16 @@ export default function InventoryUsageForm({ itemNames, today, onSuccess }: Prop
 
     if (!itemName.trim() || !quantity) { setError('Item name and quantity required.'); return; }
 
+    // Only allow items that have been purchased
+
+    if (itemNames.length > 0 && !itemNames.includes(itemName.trim())) {
+
+      setError(`"${itemName.trim()}" has not been purchased yet. Add a purchase entry first.`);
+
+      return;
+
+    }
+
     setSaving(true); setError(null);
 
 

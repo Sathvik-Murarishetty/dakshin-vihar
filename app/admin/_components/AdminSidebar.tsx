@@ -12,6 +12,8 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { ROLE_TABS, ROLE_LABEL } from './roles';
 
 
+ 
+
 const ALL_TABS = [
 
   { id: 'dashboard',     label: 'Dashboard' },
@@ -22,7 +24,9 @@ const ALL_TABS = [
 
   { id: 'orders',        label: 'Orders' },
 
-  { id: 'inventory',     label: 'Inventory' },
+  { id: 'addons',        label: 'Add-ons' },
+
+  { id: 'inventory',     label: 'Inventory',     href: '/admin/inventory' },
 
   { id: 'subscriptions', label: 'Subscriptions' },
 
@@ -57,14 +61,13 @@ const SIDEBAR_GROUPS: Array<{ label: string; items: string[] }> = [
 
   { label: 'Settings',   items: ['settings'] },
 
-  { label: 'Menu',       items: ['menu'] },
+  { label: 'Menu',       items: ['menu', 'addons'] },
 
   { label: 'Support',    items: ['contact'] },
 
   { label: 'Account',    items: ['account'] },
 
 ];
-
 
  
 
@@ -113,7 +116,7 @@ function NavLink({
 
     <Link
 
-      href={tab.id === 'dashboard' ? '/admin' : `/admin?tab=${tab.id}`}
+      href={tab.href ?? (tab.id === 'dashboard' ? '/admin' : `/admin?tab=${tab.id}`)}
 
       onClick={onNavigate}
 

@@ -92,6 +92,21 @@ export default async function OrderDetailPage({
 
  
 
+  /* Current viewer role — drivers must not edit driver assignment */
+
+  const { data: { user: me } } = await supabase.auth.getUser();
+
+  const { data: myProfile } = me
+
+    ? await supabase.from('profiles').select('role').eq('id', me.id).single()
+
+    : { data: null };
+
+  const isDriver = myProfile?.role === 'driver';
+
+
+ 
+
   const customer = order.customer as { full_name?: string; email?: string; phone?: string } | null;
 
   const driver   = order.driver   as { id?: string; name?: string } | null;
@@ -436,61 +451,81 @@ export default async function OrderDetailPage({
 
  
 
-      {/* Driver assignment */}
+      {/* Driver assignment — hidden for driver role */}
 
-      <form
+      {isDriver ? (
 
-        action={assignDriver}
+        driver && (
 
-        className="mb-6 flex flex-wrap items-end gap-3 rounded-[16px] p-5"
+          <div className="mb-6 rounded-[16px] p-5"
 
-        style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}
+            style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
 
-      >
+            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>Assigned Driver</p>
 
-        <div className="flex flex-col gap-1.5 flex-1 min-w-[180px]">
+            <p className="font-semibold text-[14px]" style={{ color: '#162019' }}>{driver.name}</p>
 
-          <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Assigned Driver</label>
+          </div>
 
-          <select
+        )
 
-            name="driver_id"
+      ) : (
 
-            defaultValue={driver?.id ?? ''}
+        <form
 
-            className="rounded-[12px] px-4 py-2.5 text-[13px]"
+          action={assignDriver}
 
-            style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+          className="mb-6 flex flex-wrap items-end gap-3 rounded-[16px] p-5"
 
-          >
-
-            <option value="">— None —</option>
-
-            {drivers?.map((d) => (
-
-              <option key={d.id} value={d.id}>{d.name}</option>
-
-            ))}
-
-          </select>
-
-        </div>
-
-        <button
-
-          type="submit"
-
-          className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
-
-          style={{ background: '#162019', color: '#F6F2E9' }}
+          style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}
 
         >
 
-          Assign
+          <div className="flex flex-col gap-1.5 flex-1 min-w-[180px]">
 
-        </button>
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Assigned Driver</label>
 
-      </form>
+            <select
+
+              name="driver_id"
+
+              defaultValue={driver?.id ?? ''}
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+            >
+
+              <option value="">— None —</option>
+
+              {drivers?.map((d) => (
+
+                <option key={d.id} value={d.id}>{d.name}</option>
+
+              ))}
+
+            </select>
+
+          </div>
+
+          <button
+
+            type="submit"
+
+            className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
+
+            style={{ background: '#162019', color: '#F6F2E9' }}
+
+          >
+
+            Assign
+
+          </button>
+
+        </form>
+
+      )}
 
 
  
@@ -535,7 +570,7 @@ export default async function OrderDetailPage({
 
  
 
-        {order.status !== 'canceled' && order.status !== 'delivered' && (
+        {order.status !== 'canceled' && order.status !== 'delivered' && !isDriver && (
 
           <form action={cancelOrder}>
 
@@ -556,9 +591,9 @@ export default async function OrderDetailPage({
 
  
 
-        {/* Delayed delivery toggle — only for active/in-transit orders */}
+        {/* Delayed delivery toggle — only for admin/non-driver roles */}
 
-        {order.status !== 'delivered' && order.status !== 'canceled' && (
+        {order.status !== 'delivered' && order.status !== 'canceled' && !isDriver && (
 
           <form action={toggleDelay}>
 
@@ -585,7 +620,7 @@ export default async function OrderDetailPage({
 
  
 
-        <ConfirmDeleteButton action={deleteOrder} label="order" />
+        {!isDriver && <ConfirmDeleteButton action={deleteOrder} label="order" />}
 
       </div>
 

@@ -2,7 +2,7 @@ import type { CSSProperties } from 'react';
 
 import Link from 'next/link';
 
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase/server';
 
 import { revalidatePath } from 'next/cache';
 
@@ -33,7 +33,7 @@ const STATUS_OPTS = [
 
 export default async function SubscriptionsSection({ status = 'all', q, page: pageParam }: Props) {
 
-  const supabase = await createServerSupabaseClient();
+  const sb = createServiceSupabaseClient();
 
   const PAGE_SIZE = 25;
 
@@ -50,7 +50,7 @@ export default async function SubscriptionsSection({ status = 'all', q, page: pa
 
   if (q?.trim()) {
 
-    const { data: profiles } = await supabase
+    const { data: profiles } = await sb
 
       .from('profiles')
 
@@ -65,7 +65,7 @@ export default async function SubscriptionsSection({ status = 'all', q, page: pa
 
  
 
-  let query = supabase
+  let query = sb
 
     .from('subscriptions')
 
@@ -96,7 +96,7 @@ export default async function SubscriptionsSection({ status = 'all', q, page: pa
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
     const start = new Date();
 
@@ -125,7 +125,7 @@ export default async function SubscriptionsSection({ status = 'all', q, page: pa
 
     'use server';
 
-    const sb    = await createServerSupabaseClient();
+    const sb    = createServiceSupabaseClient();
 
     const start = new Date();
 
@@ -154,7 +154,7 @@ export default async function SubscriptionsSection({ status = 'all', q, page: pa
 
     'use server';
 
-    const sb = await createServerSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
     await sb.from('subscriptions').update({ status: 'canceled' }).eq('id', id);
 

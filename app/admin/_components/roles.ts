@@ -3,6 +3,7 @@ export const ROLE_TABS: Record<string, string[]> = {
     'dashboard',
     'meals',
     'menu',
+    'addons',
     'orders',
     'inventory',
     'subscriptions',
@@ -18,6 +19,7 @@ export const ROLE_TABS: Record<string, string[]> = {
     'dashboard',
     'meals',
     'menu',
+    'addons',
     'orders',
     'inventory',
     'subscriptions',
@@ -29,10 +31,10 @@ export const ROLE_TABS: Record<string, string[]> = {
     'settings',
     'account',
   ],
-  kitchen: ['dashboard', 'meals', 'orders', 'inventory','account'],
-  cook: ['dashboard', 'meals', 'orders', 'inventory','account'],
-  staff: ['dashboard', 'orders', 'inventory', 'subscriptions', 'contact','account'],
-  driver: ['dashboard', 'orders','account'],
+  kitchen: ['dashboard', 'meals', 'orders', 'inventory', 'account'],
+  cook: ['dashboard', 'meals', 'orders', 'inventory', 'account'],
+  staff: ['dashboard', 'orders', 'inventory', 'subscriptions', 'contact', 'account'],
+  driver: ['dashboard', 'orders', 'account'],
 };
 
 export const ROLE_LABEL: Record<string, string> = {

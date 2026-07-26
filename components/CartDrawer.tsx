@@ -96,6 +96,14 @@ export default function CartDrawer() {
 
   const [storeHDMsg,       setStoreHDMsg]       = useState<string | null>(null);
 
+  // Add-ons
+
+  type Addon = { id: string; name: string; description?: string | null; price: number };
+
+  const [addons,     setAddons]     = useState<Addon[]>([]);
+
+  const [addonQty,   setAddonQty]   = useState<Record<string, number>>({});
+
 
  
 
@@ -103,9 +111,17 @@ export default function CartDrawer() {
 
   const cartTotal    = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
+  const addonTotal   = Object.entries(addonQty).reduce((s, [id, qty]) => {
+
+    const a = addons.find((x) => x.id === id);
+
+    return s + (a ? a.price * qty : 0);
+
+  }, 0);
+
   const discount     = couponData?.discountAmount ?? 0;
 
-  const finalTotal   = Math.max(0, cartTotal + DELIVERY_FEE - discount);
+  const finalTotal   = Math.max(0, cartTotal + addonTotal + DELIVERY_FEE - discount);
 
 
  
@@ -181,6 +197,12 @@ export default function CartDrawer() {
 
       .catch(() => { setStoreOpen(true); }); // fail-open: don't block on network error
 
+    // Fetch add-ons relevant to the current cart items
+
+    // Collect menu_item IDs (itemType === 'menu_item')
+
+    setAddonQty({});  // reset selection on open
+
   }, [isCartOpen]);
 
 
@@ -193,6 +215,35 @@ export default function CartDrawer() {
     return () => { document.body.style.overflow = ''; };
 
   }, [isCartOpen]);
+
+
+ 
+
+  // Fetch relevant add-ons whenever the cart items change (and cart is open)
+
+  useEffect(() => {
+
+    if (!isCartOpen || items.length === 0) { setAddons([]); return; }
+
+    const menuItemIds = items
+
+      .filter((i) => i.itemType === 'menu_item')
+
+      .map((i) => i.mealId)
+
+      .join(',');
+
+    const url = menuItemIds ? `/api/addons?menuItemIds=${menuItemIds}` : '/api/addons';
+
+    fetch(url)
+
+      .then((r) => r.json())
+
+      .then(({ addons: data }: { addons: Addon[] }) => setAddons(data ?? []))
+
+      .catch(() => setAddons([]));
+
+  }, [isCartOpen, items]);
 
 
  
@@ -392,6 +443,12 @@ export default function CartDrawer() {
             quantity: item.quantity,
 
           })),
+
+          addons: Object.entries(addonQty)
+
+            .filter(([, qty]) => qty > 0)
+
+            .map(([addonId, quantity]) => ({ addonId, quantity })),
 
           mealDate:          items[0]?.mealDate ?? new Date().toISOString().slice(0, 10),
 
@@ -629,6 +686,115 @@ export default function CartDrawer() {
                 ))}
 
               </div>
+
+
+ 
+
+              {/* ── Add-ons ───────────────────────────────────── */}
+
+              {addons.length > 0 && (
+
+                <div className="mb-5">
+
+                  <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.08em]" style={{ color: '#4B5A50' }}>
+
+                    Add to your order
+
+                  </p>
+
+                  <div className="flex flex-col gap-2">
+
+                    {addons.map((addon) => {
+
+                      const qty = addonQty[addon.id] ?? 0;
+
+                      return (
+
+                        <div key={addon.id}
+
+                          className="flex items-center justify-between gap-3 rounded-[12px] px-4 py-3"
+
+                          style={{
+
+                            background: qty > 0 ? 'rgba(22,32,25,.04)' : 'transparent',
+
+                            border: qty > 0 ? '1px solid rgba(22,32,25,.12)' : '1px solid rgba(22,32,25,.07)',
+
+                          }}>
+
+                          <div className="flex-1 min-w-0">
+
+                            <p className="text-[13px] font-semibold leading-tight" style={{ color: '#162019' }}>{addon.name}</p>
+
+                            {addon.description && (
+
+                              <p className="text-[11px]" style={{ color: '#4B5A50' }}>{addon.description}</p>
+
+                            )}
+
+                            <p className="text-[12px] font-semibold mt-0.5" style={{ color: '#D8B15A' }}>AED {addon.price}</p>
+
+                          </div>
+
+                          {qty === 0 ? (
+
+                            <button
+
+                              type="button"
+
+                              onClick={() => setAddonQty((prev) => ({ ...prev, [addon.id]: 1 }))}
+
+                              className="rounded-[8px] px-3 py-1.5 text-[12px] font-semibold shrink-0"
+
+                              style={{ background: '#162019', color: '#F6F2E9' }}>
+
+                              + Add
+
+                            </button>
+
+                          ) : (
+
+                            <div className="flex items-center gap-1 rounded-[8px] overflow-hidden shrink-0"
+
+                              style={{ border: '1px solid rgba(22,32,25,.15)' }}>
+
+                              <button type="button"
+
+                                onClick={() => setAddonQty((prev) => ({ ...prev, [addon.id]: Math.max(0, qty - 1) }))}
+
+                                className="flex h-7 w-7 items-center justify-center" style={{ background: 'rgba(22,32,25,.04)' }}>
+
+                                <Minus size={10} strokeWidth={2.5} />
+
+                              </button>
+
+                              <span className="w-5 text-center text-[13px] font-bold" style={{ color: '#162019' }}>{qty}</span>
+
+                              <button type="button"
+
+                                onClick={() => setAddonQty((prev) => ({ ...prev, [addon.id]: qty + 1 }))}
+
+                                className="flex h-7 w-7 items-center justify-center" style={{ background: 'rgba(22,32,25,.04)' }}>
+
+                                <Plus size={10} strokeWidth={2.5} />
+
+                              </button>
+
+                            </div>
+
+                          )}
+
+                        </div>
+
+                      );
+
+                    })}
+
+                  </div>
+
+                </div>
+
+              )}
 
 
  
@@ -1013,11 +1179,7 @@ export default function CartDrawer() {
 
                   <strong style={{ color: '#162019' }}>International City</strong>, and{' '}
 
-                  <strong style={{ color: '#162019' }}>Academic City</strong>, and{' '}
-
-                  <strong style={{ color: '#162019' }}>Dubai Land</strong>, and{' '}
-
-                  <strong style={{ color: '#162019' }}>Liwan Circle</strong> only.
+                  <strong style={{ color: '#162019' }}>Academic City</strong> only.
 
                 </p>
 
@@ -1157,6 +1319,18 @@ export default function CartDrawer() {
                   <span style={{ color: '#162019' }}>AED {cartTotal}</span>
 
                 </div>
+
+                {addonTotal > 0 && (
+
+                  <div className="flex justify-between text-[14px]">
+
+                    <span style={{ color: '#4B5A50' }}>Add-ons</span>
+
+                    <span style={{ color: '#162019' }}>AED {addonTotal.toFixed(2)}</span>
+
+                  </div>
+
+                )}
 
                 {discount > 0 && (
 

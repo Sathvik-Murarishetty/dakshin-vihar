@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
 
-  const { items, mealDate, notes, deliveryAddressId, couponId, discountAmount } = body;
+  const { items, mealDate, notes, deliveryAddressId, couponId, discountAmount, addons: addonSelections } = body;
 
 
  
@@ -91,11 +91,45 @@ export async function POST(request: NextRequest) {
 
  
 
+  // ── Verify add-ons server-side ───────────────────────────────
+
+  type AddonRow = { id: string; name: string; price: number; quantity: number };
+
+  const verifiedAddons: AddonRow[] = [];
+
+
+ 
+
+  if (Array.isArray(addonSelections) && addonSelections.length > 0) {
+
+    for (const raw of addonSelections as { addonId: string; quantity: number }[]) {
+
+      if (!raw.addonId || raw.quantity < 1) continue;
+
+      const sbSvc = createServiceSupabaseClient();
+
+      const { data: addon } = await sbSvc.from('addons').select('id, name, price, is_active').eq('id', raw.addonId).single();
+
+      if (!addon || !addon.is_active) continue; // silently skip inactive add-ons
+
+      verifiedAddons.push({ id: addon.id, name: addon.name, price: Number(addon.price), quantity: Math.max(1, Number(raw.quantity)) });
+
+    }
+
+  }
+
+
+ 
+
   // ── Calculate basket totals ───────────────────────────────────
 
-  const DELIVERY_FEE   = 3; // AED 3 standard flat delivery fee
+  const DELIVERY_FEE   = 3;
 
-  const subtotal       = verifiedItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+  const itemsSubtotal  = verifiedItems.reduce((s, i) => s + i.unitPrice * i.quantity, 0);
+
+  const addonsSubtotal = verifiedAddons.reduce((s, a) => s + a.price * a.quantity, 0);
+
+  const subtotal       = itemsSubtotal + addonsSubtotal;
 
   const safeDiscount   = Math.min(Math.max(0, Number(discountAmount) || 0), subtotal);
 
@@ -165,11 +199,40 @@ export async function POST(request: NextRequest) {
 
   if (itemsErr) {
 
-    // Roll back: delete the orphan order header
-
     await supabase.from('orders').delete().eq('id', order.id);
 
     return NextResponse.json({ error: itemsErr.message }, { status: 500 });
+
+  }
+
+
+ 
+
+  // ── Insert order_addons if any ────────────────────────────────
+
+  if (verifiedAddons.length > 0) {
+
+    const sbSvc = createServiceSupabaseClient();
+
+    await sbSvc.from('order_addons').insert(
+
+      verifiedAddons.map((a) => ({
+
+        order_id:   order.id,
+
+        addon_id:   a.id,
+
+        name:       a.name,
+
+        quantity:   a.quantity,
+
+        unit_price: a.price,
+
+        subtotal:   a.price * a.quantity,
+
+      }))
+
+    );
 
   }
 

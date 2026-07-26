@@ -1,5 +1,7 @@
 import Link from 'next/link';
 
+import type { CSSProperties } from 'react';
+
 import { notFound, redirect } from 'next/navigation';
 
 import { revalidatePath } from 'next/cache';
@@ -13,7 +15,7 @@ import { logAudit } from '@/lib/audit';
 
  
 
-const STATUS_STYLE: Record<string, React.CSSProperties> = {
+const STATUS_STYLE: Record<string, CSSProperties> = {
 
   pending:  { background: 'rgba(216,177,90,.1)',  color: '#b98a3d' },
 
@@ -129,6 +131,45 @@ export default async function SubscriptionDetailPage({
 
  
 
+  /** Renew: extends from the CURRENT end date (if still in the future), else from today. */
+
+  async function renew30Days() {
+
+    'use server';
+
+    const sb  = createServiceSupabaseClient();
+
+    const now = new Date();
+
+    const currentEnd = sub.current_period_end ? new Date(sub.current_period_end) : null;
+
+    // If the subscription hasn't expired yet, stack 30 days on top of current end date
+
+    const base   = currentEnd && currentEnd > now ? currentEnd : now;
+
+    const newEnd = new Date(base);
+
+    newEnd.setMonth(newEnd.getMonth() + 1);
+
+    await sb.from('subscriptions').update({
+
+      status:             'active',
+
+      current_period_end: newEnd.toISOString(),
+
+    }).eq('id', id);
+
+    revalidatePath(`/admin/subscriptions/${id}`);
+
+    revalidatePath('/admin');
+
+    redirect(`/admin/subscriptions/${id}?toast=Subscription+renewed`);
+
+  }
+
+
+ 
+
   async function cancel() {
 
     'use server';
@@ -198,6 +239,68 @@ export default async function SubscriptionDetailPage({
 
  
 
+  async function updatePeriod(formData: FormData) {
+
+    'use server';
+
+    const sb    = createServiceSupabaseClient();
+
+    const start = (formData.get('period_start') as string) || null;
+
+    const end   = (formData.get('period_end')   as string) || null;
+
+    await sb.from('subscriptions').update({
+
+      ...(start ? { current_period_start: new Date(start).toISOString() } : {}),
+
+      ...(end   ? { current_period_end:   new Date(end).toISOString()   } : {}),
+
+      status: 'active',
+
+    }).eq('id', id);
+
+    revalidatePath(`/admin/subscriptions/${id}`);
+
+    revalidatePath('/admin');
+
+    redirect(`/admin/subscriptions/${id}?toast=Period+updated`);
+
+  }
+
+
+ 
+
+  async function pauseSubscription() {
+
+    'use server';
+
+    const sb  = createServiceSupabaseClient();
+
+    // "Pause" = set end date to today, keeping status active
+
+    // Admin can renew later with the Renew 30 Days button
+
+    const today = new Date();
+
+    today.setHours(23, 59, 59, 0);
+
+    await sb.from('subscriptions').update({
+
+      current_period_end: today.toISOString(),
+
+    }).eq('id', id);
+
+    revalidatePath(`/admin/subscriptions/${id}`);
+
+    revalidatePath('/admin');
+
+    redirect(`/admin/subscriptions/${id}?toast=Subscription+paused`);
+
+  }
+
+
+ 
+
   async function changeAddress(formData: FormData) {
 
     'use server';
@@ -223,7 +326,84 @@ export default async function SubscriptionDetailPage({
 
  
 
-  /* ── Render ─────────────────────────────────────────── */
+  async function addOverride(formData: FormData) {
+
+    'use server';
+
+    const sb   = createServiceSupabaseClient();
+
+    const ss   = await createServerSupabaseClient();
+
+    const { data: { user: admin } } = await ss.auth.getUser();
+
+    const startDate = formData.get('override_start_date') as string;
+
+    const endDate   = (formData.get('override_end_date') as string) || null;
+
+    const slot      = formData.get('override_slot') as string;
+
+    if (!startDate || !slot) return;
+
+    await sb.from('subscription_overrides').insert({
+
+      subscription_id: id,
+
+      override_date:   startDate,
+
+      end_date:        endDate,
+
+      override_slot:   slot,
+
+      notes:           (formData.get('override_notes') as string) || null,
+
+      created_by:      admin?.id ?? null,
+
+    });
+
+    revalidatePath(`/admin/subscriptions/${id}`);
+
+    redirect(`/admin/subscriptions/${id}?toast=Override+saved`);
+
+  }
+
+
+ 
+
+  async function removeOverride(overrideId: string) {
+
+    'use server';
+
+    const sb = createServiceSupabaseClient();
+
+    await sb.from('subscription_overrides').delete().eq('id', overrideId);
+
+    revalidatePath(`/admin/subscriptions/${id}`);
+
+    redirect(`/admin/subscriptions/${id}?toast=Override+removed`);
+
+  }
+
+
+ 
+
+  // Fetch existing overrides for this subscription (upcoming + recent)
+
+  const { data: overrides } = await createServiceSupabaseClient()
+
+    .from('subscription_overrides')
+
+    .select('id, override_date, end_date, override_slot, notes')
+
+    .eq('subscription_id', id)
+
+    .order('override_date', { ascending: false })
+
+    .limit(20);
+
+
+ 
+
+  const todayStr = new Date().toISOString().slice(0, 10);
 
   return (
 
@@ -488,7 +668,7 @@ export default async function SubscriptionDetailPage({
 
             <p className="w-full text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>
 
-              Actions {isExpired && <span style={{ color: '#b93a3a' }}>· Expired</span>}
+              Actions {isExpired && <span style={{ color: '#b93a3a' }}>· Paused / Expired — use Renew to resume</span>}
 
             </p>
 
@@ -526,13 +706,49 @@ export default async function SubscriptionDetailPage({
 
             {(isExpired || sub.status === 'canceled') && (
 
-              <form action={activate}>
+              <form action={renew30Days}>
 
                 <button type="submit" className="rounded-full px-5 py-2 text-[13px] font-semibold"
 
                   style={{ background: 'rgba(216,177,90,.12)', color: '#b98a3d', border: '1px solid rgba(216,177,90,.3)' }}>
 
-                  Renew 30 Days
+                  Renew +30 Days
+
+                </button>
+
+              </form>
+
+            )}
+
+            {/* Also allow extending an active (non-expired) subscription */}
+
+            {sub.status === 'active' && !isExpired && (
+
+              <form action={renew30Days}>
+
+                <button type="submit" className="rounded-full px-5 py-2 text-[13px] font-semibold"
+
+                  style={{ background: 'rgba(22,100,200,.06)', color: '#1a64c8', border: '1px solid rgba(22,100,200,.2)' }}>
+
+                  Extend +30 Days
+
+                </button>
+
+              </form>
+
+            )}
+
+            {/* Pause: only available when active and not already expired */}
+
+            {sub.status === 'active' && !isExpired && (
+
+              <form action={pauseSubscription}>
+
+                <button type="submit" className="rounded-full px-5 py-2 text-[13px] font-semibold"
+
+                  style={{ background: 'rgba(22,32,25,.06)', color: '#4B5A50', border: '1px solid rgba(22,32,25,.15)' }}>
+
+                  Pause (end today)
 
                 </button>
 
@@ -551,13 +767,92 @@ export default async function SubscriptionDetailPage({
 
  
 
+      {/* Adjust period dates */}
+
+      <form
+
+        action={updatePeriod}
+
+        className="mb-6 rounded-[20px] p-6 flex flex-col gap-4"
+
+        style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}
+
+      >
+
+        <h2 className="font-semibold text-[15px]" style={{ color: '#162019' }}>Adjust Period Dates</h2>
+
+        <p className="text-[12px]" style={{ color: '#4B5A50' }}>
+
+          Manually set the subscription start and end dates. Use this to extend, shorten, or resume after a pause.
+
+        </p>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+
+          <div className="flex flex-col gap-1.5">
+
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Start Date</label>
+
+            <input
+
+              name="period_start"
+
+              type="date"
+
+              defaultValue={sub.current_period_start ? new Date(sub.current_period_start).toISOString().slice(0, 10) : ''}
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+            />
+
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>End Date</label>
+
+            <input
+
+              name="period_end"
+
+              type="date"
+
+              defaultValue={sub.current_period_end ? new Date(sub.current_period_end).toISOString().slice(0, 10) : ''}
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
+
+            />
+
+          </div>
+
+        </div>
+
+        <div>
+
+          <button type="submit" className="btn-gold" style={{ height: '44px', padding: '0 28px', fontSize: '13px' }}>
+
+            Update Period
+
+          </button>
+
+        </div>
+
+      </form>
+
+
+ 
+
       {/* Edit form */}
 
       <form
 
         action={saveDetails}
 
-        className="rounded-[20px] p-6 flex flex-col gap-4"
+        className="mb-6 rounded-[20px] p-6 flex flex-col gap-4"
 
         style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}
 
@@ -709,6 +1004,201 @@ export default async function SubscriptionDetailPage({
         </div>
 
       </form>
+
+
+ 
+
+      {/* ── Slot Overrides ────────────────────────────────────── */}
+
+      <div className="rounded-[20px] p-6 flex flex-col gap-5"
+
+        style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+
+        <div>
+
+          <h2 className="font-semibold text-[15px]" style={{ color: '#162019' }}>Slot Overrides</h2>
+
+          <p className="mt-1 text-[12px]" style={{ color: '#4B5A50' }}>
+
+            Override the meal slot for a specific date or date range. Leave <em>End Date</em> empty to apply only on the start date.
+
+            <br />Default slot: <strong style={{ color: '#162019' }}>{sub.meal_slot_preference}</strong>
+
+          </p>
+
+        </div>
+
+
+ 
+
+        {/* Add override form */}
+
+        <form action={addOverride} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 items-end">
+
+          <div className="flex flex-col gap-1.5">
+
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Start Date *</label>
+
+            <input name="override_start_date" type="date" required
+
+              defaultValue={todayStr}
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>End Date (optional)</label>
+
+            <input name="override_end_date" type="date"
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Override Slot</label>
+
+            <select name="override_slot" required
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}>
+
+              <option value="lunch">Lunch</option>
+
+              <option value="dinner">Dinner</option>
+
+              <option value="both">Both (Lunch + Dinner)</option>
+
+            </select>
+
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+
+            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Note (optional)</label>
+
+            <input name="override_notes" type="text" placeholder="e.g. customer request"
+
+              className="rounded-[12px] px-4 py-2.5 text-[13px]"
+
+              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+
+          </div>
+
+          <div className="sm:col-span-2 lg:col-span-4">
+
+            <button type="submit" className="rounded-[12px] px-5 py-2.5 text-[13px] font-semibold"
+
+              style={{ background: '#162019', color: '#F6F2E9' }}>
+
+              Save Override
+
+            </button>
+
+          </div>
+
+        </form>
+
+
+ 
+
+        {/* Existing overrides list */}
+
+        {overrides && overrides.length > 0 ? (
+
+          <div className="flex flex-col gap-2">
+
+            {overrides.map((ov) => {
+
+              const effectiveEnd = (ov as { end_date?: string | null }).end_date ?? ov.override_date;
+
+              const isPast = effectiveEnd < todayStr;
+
+              const endDate = (ov as { end_date?: string | null }).end_date;
+
+              return (
+
+                <div key={ov.id}
+
+                  className="flex items-center justify-between rounded-[12px] px-4 py-3"
+
+                  style={{
+
+                    background: isPast ? 'rgba(22,32,25,.03)' : 'rgba(22,160,133,.04)',
+
+                    border: isPast ? '1px solid rgba(22,32,25,.08)' : '1px solid rgba(22,160,133,.2)',
+
+                    opacity: isPast ? 0.65 : 1,
+
+                  }}>
+
+                  <div className="flex flex-wrap items-center gap-2">
+
+                    <span className="font-semibold text-[13px]" style={{ color: '#162019' }}>
+
+                      {new Date(ov.override_date + 'T00:00:00').toLocaleDateString('en-AE', { weekday: 'short', day: 'numeric', month: 'short' })}
+
+                      {endDate && endDate !== ov.override_date && (
+
+                        <>
+
+                          {' → '}
+
+                          {new Date(endDate + 'T00:00:00').toLocaleDateString('en-AE', { weekday: 'short', day: 'numeric', month: 'short' })}
+
+                        </>
+
+                      )}
+
+                    </span>
+
+                    <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize"
+
+                      style={{ background: 'rgba(22,160,133,.1)', color: '#16a34a' }}>
+
+                      {ov.override_slot}
+
+                    </span>
+
+                    {ov.notes && <span className="text-[11px]" style={{ color: '#4B5A50' }}>{ov.notes}</span>}
+
+                    {isPast && <span className="text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>past</span>}
+
+                  </div>
+
+                  <form action={removeOverride.bind(null, ov.id)}>
+
+                    <button type="submit" className="text-[11px] font-medium ml-3 shrink-0" style={{ color: '#b93a3a' }}>
+
+                      Remove
+
+                    </button>
+
+                  </form>
+
+                </div>
+
+              );
+
+            })}
+
+          </div>
+
+        ) : (
+
+          <p className="text-[13px]" style={{ color: 'rgba(22,32,25,.4)' }}>No overrides set.</p>
+
+        )}
+
+      </div>
 
     </div>
 

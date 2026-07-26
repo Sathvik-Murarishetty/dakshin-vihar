@@ -96,7 +96,7 @@ export default async function InventoryPage({
 
     .from('inventory_usage')
 
-    .select('item_name, unit, quantity, used_at, notes, used_by')
+    .select('item_name, unit, quantity, used_at, notes, used_by, logger:profiles!used_by(full_name, email)')
 
     .order('used_at', { ascending: false });
 
@@ -183,13 +183,15 @@ export default async function InventoryPage({
 
   /* ── Distinct item names (for autocomplete) ─────────────────────── */
 
-  // Include both purchase names AND usage item names for full coverage
+  // purchasedItemNames: only items that have been purchased (for usage form validation)
 
-  const purchaseNames = (allPurchases ?? []).map((p) => p.name);
+  const purchasedItemNames = [...new Set((allPurchases ?? []).map((p) => p.name))].sort();
 
-  const usageNames    = (allUsage ?? []).map((u) => u.item_name);
+  // itemNames: full set (purchases + any historical usage entries)
 
-  const itemNames = [...new Set([...purchaseNames, ...usageNames])].sort();
+  const usageNames = (allUsage ?? []).map((u) => u.item_name);
+
+  const itemNames  = [...new Set([...purchasedItemNames, ...usageNames])].sort();
 
 
  
@@ -433,31 +435,37 @@ export default async function InventoryPage({
 
                   {isAdmin && (
 
-                    <form action={saveThreshold} className="mt-3 flex gap-1.5 items-center">
+                    <form action={saveThreshold} className="mt-3 flex flex-col gap-1">
 
-                      <input type="hidden" name="item_name" value={item.name} />
+                      <div className="flex gap-1.5 items-center">
 
-                      <input type="hidden" name="unit" value={item.unit} />
+                        <input type="hidden" name="item_name" value={item.name} />
 
-                      <input type="number" name="threshold" min="0" step="0.01"
+                        <input type="hidden" name="unit" value={item.unit} />
 
-                        defaultValue={item.threshold || ''}
+                        <input type="number" name="threshold" min="0" step="0.01"
 
-                        placeholder="Alert at"
+                          defaultValue={item.threshold || ''}
 
-                        className="w-20 rounded-[8px] px-2 py-1.5 text-[11px]"
+                          placeholder="Alert at"
 
-                        style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+                          className="w-20 rounded-[8px] px-2 py-1.5 text-[11px]"
 
-                      <button type="submit"
+                          style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
 
-                        className="rounded-[8px] px-2 py-1.5 text-[11px] font-medium"
+                        <button type="submit"
 
-                        style={{ background: 'rgba(22,32,25,.08)', color: '#162019' }}>
+                          className="rounded-[8px] px-2 py-1.5 text-[11px] font-medium"
 
-                        Set
+                          style={{ background: 'rgba(22,32,25,.08)', color: '#162019' }}>
 
-                      </button>
+                          Set
+
+                        </button>
+
+                      </div>
+
+                      <p className="text-[10px]" style={{ color: 'rgba(22,32,25,.35)' }}>Set to 0 to clear alert</p>
 
                     </form>
 
@@ -493,7 +501,7 @@ export default async function InventoryPage({
 
       {tab === 'usage' && (
 
-        <InventoryUsageForm itemNames={itemNames} today={today} />
+        <InventoryUsageForm itemNames={purchasedItemNames} today={today} />
 
       )}
 
@@ -649,7 +657,7 @@ export default async function InventoryPage({
 
                 <tr>
 
-                  {['Date', 'Item', 'Qty Used', 'Notes'].map((h) => (
+                  {['Date', 'Item', 'Qty Used', 'Notes', 'Logged By'].map((h) => (
 
                     <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em]"
 
@@ -685,13 +693,25 @@ export default async function InventoryPage({
 
                     <td className="px-4 py-3 text-[12px]" style={{ color: '#4B5A50' }}>{u.notes ?? '—'}</td>
 
+                    <td className="px-4 py-3 text-[12px]" style={{ color: '#4B5A50' }}>
+
+                      {(() => {
+
+                        const lg = (u as { logger?: { full_name?: string; email?: string } | null }).logger;
+
+                        return lg?.full_name ?? lg?.email ?? '—';
+
+                      })()}
+
+                    </td>
+
                   </tr>
 
                 ))}
 
                 {!recentUsage.length && (
 
-                  <tr><td colSpan={4} className="px-4 py-10 text-center text-[13px]" style={{ color: '#4B5A50' }}>
+                  <tr><td colSpan={5} className="px-4 py-10 text-center text-[13px]" style={{ color: '#4B5A50' }}>
 
                     No usage logged yet.
 

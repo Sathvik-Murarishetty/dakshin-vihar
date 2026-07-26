@@ -1,6 +1,10 @@
 import { redirect } from 'next/navigation';
 
-import { getCurrentAdmin } from './lib/auth';
+import {
+  createServerSupabaseClient,
+  createServiceSupabaseClient,
+} from '@/lib/supabase/server';
+
 import { ROLE_TABS } from './_components/roles';
 
 import DashboardSection from './_sections/DashboardSection';
@@ -14,35 +18,67 @@ import ContactSection from './_sections/ContactSection';
 import StaffSection from './_sections/StaffSection';
 import CustomersSection from './_sections/CustomersSection';
 import StoreSettingsSection from './_sections/StoreSettingsSection';
+import InventorySection from './_sections/InventorySection';
 import AccountSection from './_sections/AccountSection';
-
-type AdminSearchParams = {
-  tab?: string;
-  date?: string;
-  page?: string;
-  period?: string;
-  status?: string;
-  q?: string;
-  slot?: string;
-  type?: string;
-  active?: string;
-  readFilter?: string;
-  category?: string;
-};
+import AddonsSection from './_sections/AddonsSection';
 
 export default async function AdminPage({
   searchParams,
 }: {
-  searchParams: Promise<AdminSearchParams>;
+  searchParams: Promise<{
+    tab?: string;
+    date?: string;
+    page?: string;
+    period?: string;
+    status?: string;
+    q?: string;
+    slot?: string;
+    type?: string;
+    active?: string;
+    readFilter?: string;
+    category?: string;
+    orderId?: string;
+    allTime?: string;
+  }>;
 }) {
   const params = await searchParams;
   const tab = params.tab ?? 'dashboard';
 
-  const { user, role, profile } = await getCurrentAdmin();
+  // Auth
+  const supabase = await createServerSupabaseClient();
 
-  const allowedTabs = ROLE_TABS[role] ?? [];
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
 
-  if (tab !== 'dashboard' && !allowedTabs.includes(tab)) {
+  if (authError || !user) {
+    redirect('/login?redirect=/admin');
+  }
+
+  // Read profile using service client (bypasses RLS)
+  const service = createServiceSupabaseClient();
+
+  const {
+    data: profile,
+    error: profileError,
+  } = await service
+    .from('profiles')
+    .select('full_name, role')
+    .eq('id', user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error(profileError);
+    redirect('/');
+  }
+
+  const role = profile?.role ?? 'customer';
+
+  const allowed = ROLE_TABS[role] ?? [];
+
+  // Block unauthorized tabs
+  if (tab !== 'dashboard' && !allowed.includes(tab)) {
     redirect('/admin');
   }
 
@@ -53,6 +89,9 @@ export default async function AdminPage({
     case 'menu':
       return <MenuSection q={params.q} />;
 
+    case 'addons':
+      return <AddonsSection />;
+
     case 'orders':
       return (
         <OrdersSection
@@ -60,6 +99,8 @@ export default async function AdminPage({
           page={params.page}
           status={params.status}
           q={params.q}
+          orderId={params.orderId}
+          allTime={params.allTime === '1'}
         />
       );
 
@@ -110,6 +151,7 @@ export default async function AdminPage({
         <CustomersSection
           status={params.status}
           q={params.q}
+          page={params.page}
         />
       );
 
@@ -117,14 +159,14 @@ export default async function AdminPage({
       return <StoreSettingsSection />;
 
     case 'inventory':
-      redirect('/admin/inventory');
+      return redirect('/admin/inventory');
 
     case 'account':
       return (
         <AccountSection
           email={user.email ?? ''}
           fullName={profile?.full_name ?? null}
-          role={profile?.role ?? role}
+          role={role}
         />
       );
 

@@ -7,7 +7,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase/server';
 
  
 
-interface Props { q?: string; status?: string }
+type Props = { q?: string; status?: string; page?: string };
 
 
  
@@ -35,9 +35,17 @@ const ROLE_OPTS = [
 
  
 
-export default async function CustomersSection({ q, status = 'all' }: Props) {
+export default async function CustomersSection(props: Props) {
+
+  const { q, status = 'all', page: pageParam } = props;
 
   const supabase = createServiceSupabaseClient();
+
+  const PAGE_SIZE = 50;
+
+  const page      = Math.max(1, Number(pageParam ?? '1'));
+
+  const offset    = (page - 1) * PAGE_SIZE;
 
 
  
@@ -46,11 +54,11 @@ export default async function CustomersSection({ q, status = 'all' }: Props) {
 
     .from('profiles')
 
-    .select('*')
+    .select('*', { count: 'exact' })
 
     .order('created_at', { ascending: false })
 
-    .limit(200);
+    .range(offset, offset + PAGE_SIZE - 1);
 
 
  
@@ -62,7 +70,9 @@ export default async function CustomersSection({ q, status = 'all' }: Props) {
 
  
 
-  const { data: profiles } = await query;
+  const { data: profiles, count } = await query;
+
+  const totalPages = Math.ceil((count ?? 0) / PAGE_SIZE);
 
 
  
@@ -251,6 +261,39 @@ export default async function CustomersSection({ q, status = 'all' }: Props) {
         </div>
 
       </div>
+
+
+ 
+
+      {/* Pagination */}
+
+      {totalPages > 1 && (
+
+        <div className="mt-4 flex justify-center gap-2 flex-wrap">
+
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+
+            <a key={p}
+
+              href={`/admin?tab=customers&status=${status}&page=${p}${q ? `&q=${encodeURIComponent(q)}` : ''}`}
+
+              className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium"
+
+              style={p === page
+
+                ? { background: '#162019', color: '#F6F2E9' }
+
+                : { border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+              {p}
+
+            </a>
+
+          ))}
+
+        </div>
+
+      )}
 
     </div>
 
