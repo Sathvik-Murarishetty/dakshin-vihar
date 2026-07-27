@@ -136,6 +136,8 @@ export async function POST(request: NextRequest) {
 
   let discountAmount = 0;
 
+  const DELIVERY_FEE = 3; // must match the fee in /api/orders
+
   const maxValue: number | null = (coupon as { max_value?: number | null }).max_value ?? null;
 
   if (coupon.type === 'percentage' && coupon.value) {
@@ -155,6 +157,10 @@ export async function POST(request: NextRequest) {
   } else if (coupon.type === 'first_order') {
 
     discountAmount = coupon.value ?? 0;
+
+  } else if (coupon.type === 'free_delivery') {
+
+    discountAmount = DELIVERY_FEE; // waives the AED 3 delivery fee
 
   }
 
