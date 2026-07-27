@@ -72,7 +72,7 @@ export default async function OrderDetailPage({
 
       .select(
 
-        '*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name)), customer:profiles(full_name, email, phone), driver:drivers(id, name), address:addresses(*), coupon:coupons(code, type, value)'
+        '*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name)), order_addons(id, name, quantity, unit_price, subtotal), customer:profiles(full_name, email, phone), driver:drivers(id, name), address:addresses(*), coupon:coupons(code, type, value)'
 
       )
 
@@ -88,6 +88,23 @@ export default async function OrderDetailPage({
  
 
   if (!order) notFound();
+
+
+ 
+
+  // Fetch all addresses for this customer so admin can change delivery address
+
+  const customerId = (order as { customer_id: string }).customer_id;
+
+  const { data: customerAddresses } = await supabase
+
+    .from('addresses')
+
+    .select('id, label, address_line1, city')
+
+    .eq('customer_id', customerId)
+
+    .order('is_default', { ascending: false });
 
 
  
@@ -118,9 +135,13 @@ export default async function OrderDetailPage({
 
  
 
-  type OrderItem = { id: string; quantity: number; unit_price: number; subtotal: number; menu_item: { name?: string } | null; meal: { name?: string } | null };
+  type OrderItem  = { id: string; quantity: number; unit_price: number; subtotal: number; menu_item: { name?: string } | null; meal: { name?: string } | null };
 
-  const items = order.order_items as OrderItem[] | null;
+  type OrderAddon  = { id: string; name: string; quantity: number; unit_price: number; subtotal: number };
+
+  const items  = order.order_items   as OrderItem[]  | null;
+
+  const addons = order.order_addons  as OrderAddon[] | null;
 
 
  
@@ -206,6 +227,29 @@ export default async function OrderDetailPage({
     await sb.from('orders').delete().eq('id', id);
 
     redirect('/admin?tab=orders&toast=Order+deleted');
+
+  }
+
+
+ 
+
+  async function updateDeliveryAddress(formData: FormData) {
+
+    'use server';
+
+    const newAddrId = formData.get('delivery_address_id') as string;
+
+    const sb = await createServerSupabaseClient();
+
+    await sb.from('orders').update({ delivery_address_id: newAddrId || null }).eq('id', id);
+
+    await logAudit({ action: 'update', entity: 'order', entityId: id, details: { delivery_address_id: newAddrId } });
+
+    revalidatePath(`/admin/orders/${id}`);
+
+    revalidatePath('/admin');
+
+    redirect(`/admin/orders/${id}?toast=Delivery+address+updated`);
 
   }
 
@@ -360,6 +404,40 @@ export default async function OrderDetailPage({
 
           )}
 
+          {!isDriver && customerAddresses && customerAddresses.length > 0 && (
+
+            <form action={updateDeliveryAddress} className="mt-3 flex flex-col gap-2">
+
+              <select name="delivery_address_id"
+
+                defaultValue={(order as { delivery_address_id?: string | null }).delivery_address_id ?? ''}
+
+                className="w-full rounded-[10px] px-3 py-2 text-[12px]"
+
+                style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}>
+
+                <option value="">— No address —</option>
+
+                {customerAddresses.map((a) => (
+
+                  <option key={a.id} value={a.id}>{a.label} — {a.address_line1}, {a.city}</option>
+
+                ))}
+
+              </select>
+
+              <button type="submit" className="self-start rounded-[10px] px-3 py-1.5 text-[12px] font-medium"
+
+                style={{ background: '#162019', color: '#F6F2E9' }}>
+
+                Update Address
+
+              </button>
+
+            </form>
+
+          )}
+
         </div>
 
       </div>
@@ -402,6 +480,32 @@ export default async function OrderDetailPage({
             </span>
 
             <span className="font-medium" style={{ color: '#162019' }}>AED {item.subtotal}</span>
+
+          </div>
+
+        ))}
+
+        {addons?.map((a) => (
+
+          <div key={a.id}
+
+            className="flex items-center justify-between px-5 py-3 text-[13px]"
+
+            style={{ borderTop: '1px solid rgba(22,32,25,.06)', background: 'rgba(216,177,90,.03)' }}>
+
+            <span style={{ color: '#162019' }}>
+
+              {a.name}
+
+              {a.quantity > 1 && <span style={{ color: '#4B5A50' }}> ×{a.quantity}</span>}
+
+              <span className="ml-2 rounded-full px-1.5 py-0.5 text-[10px] font-semibold"
+
+                style={{ background: 'rgba(216,177,90,.12)', color: '#b98a3d' }}>add-on</span>
+
+            </span>
+
+            <span className="font-medium" style={{ color: '#162019' }}>AED {a.subtotal}</span>
 
           </div>
 

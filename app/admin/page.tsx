@@ -18,7 +18,6 @@ import ContactSection from './_sections/ContactSection';
 import StaffSection from './_sections/StaffSection';
 import CustomersSection from './_sections/CustomersSection';
 import StoreSettingsSection from './_sections/StoreSettingsSection';
-import InventorySection from './_sections/InventorySection';
 import AccountSection from './_sections/AccountSection';
 import AddonsSection from './_sections/AddonsSection';
 
@@ -39,45 +38,36 @@ export default async function AdminPage({
     category?: string;
     orderId?: string;
     allTime?: string;
+    auditPage?: string;
   }>;
 }) {
   const params = await searchParams;
   const tab = params.tab ?? 'dashboard';
 
-  // Auth
   const supabase = await createServerSupabaseClient();
 
   const {
     data: { user },
-    error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) {
+  if (!user) {
     redirect('/login?redirect=/admin');
   }
 
   // Read profile using service client (bypasses RLS)
   const service = createServiceSupabaseClient();
 
-  const {
-    data: profile,
-    error: profileError,
-  } = await service
+  const { data: profile } = await service
     .from('profiles')
     .select('full_name, role')
     .eq('id', user.id)
     .maybeSingle();
 
-  if (profileError) {
-    console.error(profileError);
-    redirect('/');
-  }
-
   const role = profile?.role ?? 'customer';
 
   const allowed = ROLE_TABS[role] ?? [];
 
-  // Block unauthorized tabs
+  // Redirect if user isn't allowed to access the tab
   if (tab !== 'dashboard' && !allowed.includes(tab)) {
     redirect('/admin');
   }
@@ -156,10 +146,14 @@ export default async function AdminPage({
       );
 
     case 'settings':
-      return <StoreSettingsSection />;
+      return (
+        <StoreSettingsSection
+          auditPage={params.auditPage}
+        />
+      );
 
     case 'inventory':
-      return redirect('/admin/inventory');
+      redirect('/admin/inventory');
 
     case 'account':
       return (

@@ -79,21 +79,55 @@ export async function POST(request: NextRequest) {
 
  
 
-  // Check if customer already used this coupon
+  // Check per-person usage limit
 
-  const { data: existing } = await supabase
+  const maxPerPerson: number | null = (coupon as { max_uses_per_person?: number | null }).max_uses_per_person ?? null;
 
-    .from('coupon_uses')
+  if (maxPerPerson != null) {
 
-    .select('id')
+    const { count: timesUsed } = await supabase
 
-    .eq('coupon_id', coupon.id)
+      .from('coupon_uses')
 
-    .eq('customer_id', user.id)
+      .select('id', { count: 'exact', head: true })
 
-    .maybeSingle();
+      .eq('coupon_id', coupon.id)
 
-  if (existing) return NextResponse.json({ error: 'You have already used this coupon' }, { status: 400 });
+      .eq('customer_id', user.id);
+
+    if ((timesUsed ?? 0) >= maxPerPerson) {
+
+      return NextResponse.json({
+
+        error: maxPerPerson === 1
+
+          ? 'You have already used this coupon'
+
+          : `You have reached the maximum uses (${maxPerPerson}) for this coupon`,
+
+      }, { status: 400 });
+
+    }
+
+  } else {
+
+    // Legacy single-use check when no per-person limit is set
+
+    const { data: existing } = await supabase
+
+      .from('coupon_uses')
+
+      .select('id')
+
+      .eq('coupon_id', coupon.id)
+
+      .eq('customer_id', user.id)
+
+      .maybeSingle();
+
+    if (existing) return NextResponse.json({ error: 'You have already used this coupon' }, { status: 400 });
+
+  }
 
 
  
@@ -102,9 +136,17 @@ export async function POST(request: NextRequest) {
 
   let discountAmount = 0;
 
+  const maxValue: number | null = (coupon as { max_value?: number | null }).max_value ?? null;
+
   if (coupon.type === 'percentage' && coupon.value) {
 
-    discountAmount = Math.round((orderTotal * coupon.value) / 100);
+    discountAmount = (orderTotal * coupon.value) / 100;
+
+    // Apply percentage cap (e.g. max AED 50 discount)
+
+    if (maxValue != null) discountAmount = Math.min(discountAmount, maxValue);
+
+    discountAmount = Math.round(discountAmount);
 
   } else if (coupon.type === 'fixed' && coupon.value) {
 
@@ -124,6 +166,12 @@ export async function POST(request: NextRequest) {
     couponId:       coupon.id,
 
     code:           coupon.code,
+
+    type:           coupon.type,
+
+    value:          coupon.value,
+
+    maxValue:       maxValue,
 
     discountAmount: Math.min(discountAmount, orderTotal),
 

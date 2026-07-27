@@ -83,15 +83,13 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
     'use server';
 
-    const name     = formData.get('name')     as string;
+    const name    = formData.get('name')    as string;
 
-    const phone    = formData.get('phone')    as string;
+    const phone   = formData.get('phone')   as string;
 
-    const email    = (formData.get('email')   as string)?.trim() || null;
+    const email   = (formData.get('email')  as string)?.trim() || null;
 
-    const vehicle  = (formData.get('vehicle') as string) || null;
-
-    const password = (formData.get('password') as string)?.trim() || null;
+    const vehicle = (formData.get('vehicle') as string) || null;
 
 
  
@@ -105,13 +103,13 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
     if (email) {
 
-      // 1. Check if a profile already exists with this email (like how StaffSection works)
+      // Look for an existing account with this email and link it as a driver
 
       const { data: existing } = await service
 
         .from('profiles')
 
-        .select('id, role')
+        .select('id')
 
         .eq('email', email)
 
@@ -122,41 +120,13 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
       if (existing) {
 
-        // Link to existing account and upgrade role to driver
-
         profileId = existing.id;
 
         await service.from('profiles').update({ role: 'driver', phone }).eq('id', existing.id);
 
-      } else if (password) {
+      } else {
 
-        // 2. No existing account — create a new one if password is provided
-
-        const { data: authData, error: authErr } = await service.auth.admin.createUser({
-
-          email,
-
-          password,
-
-          email_confirm: true,
-
-          user_metadata: { full_name: name },
-
-        });
-
-        if (authErr) {
-
-          redirect(`/admin?tab=drivers&toast=Error:+${encodeURIComponent(authErr.message)}`);
-
-        }
-
-        if (authData.user) {
-
-          await service.from('profiles').update({ role: 'driver', phone }).eq('id', authData.user.id);
-
-          profileId = authData.user.id;
-
-        }
+        redirect(`/admin?tab=drivers&toast=No+account+found+for+${encodeURIComponent(email)}+%E2%80%94+ask+the+driver+to+sign+up+first`);
 
       }
 
@@ -185,15 +155,7 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
     revalidatePath('/admin');
 
-    const toastMsg = profileId
-
-      ? 'Driver+added+and+linked+to+login+account'
-
-      : 'Driver+added';
-
-    redirect(`/admin?tab=drivers&toast=${toastMsg}`);
-
-    // sb no longer needed — kept above only for session verification if required
+    redirect(`/admin?tab=drivers&toast=Driver+added+and+role+set+to+driver`);
 
   }
 
@@ -428,51 +390,23 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
  
 
-        {/* Login account section */}
+        {/* Login account note */}
 
         <div className="sm:col-span-2">
 
-          <div className="mb-3 rounded-[12px] p-3 text-[12px]" style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
+          <div className="rounded-[12px] p-3 text-[12px]" style={{ background: 'rgba(22,32,25,.04)', border: '1px solid rgba(22,32,25,.1)' }}>
 
             <p className="font-semibold mb-1" style={{ color: '#162019' }}>Driver Login Account</p>
 
             <p style={{ color: '#4B5A50' }}>
 
-              <strong>If the driver already has an account</strong> — enter their Email above (same as their registered email). Their profile role will be automatically set to <em>driver</em> and linked.
+              Enter the driver&apos;s registered email above. Their account role will automatically be set to <em>driver</em>.
 
               <br />
 
-              <strong>If they don&apos;t have an account</strong> — enter Email + Password below to create one. They can then log in at <strong>/login</strong>.
-
-              <br />
-
-              Leave Password empty to add driver details only without creating a login.
+              The driver must already have a login account (created via the sign-up page). Leave Email blank to add driver details without a login link.
 
             </p>
-
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-
-            <label className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>
-
-              Password <span style={{ color: 'rgba(22,32,25,.4)' }}>(optional — required to create login)</span>
-
-            </label>
-
-            <input
-
-              name="password"
-
-              type="password"
-
-              placeholder="Min 6 characters"
-
-              className="rounded-[12px] px-4 py-2.5 text-[13px]"
-
-              style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none', maxWidth: '320px' }}
-
-            />
 
           </div>
 
@@ -625,6 +559,20 @@ export default async function DriversSection({ status = 'all', q }: Props) {
                 </form>
 
               )}
+
+              <Link
+
+                href={`/admin/drivers/${driver.id}`}
+
+                className="rounded-full px-3 py-1 text-[11px] font-medium"
+
+                style={{ background: '#162019', color: '#F6F2E9' }}
+
+              >
+
+                View
+
+              </Link>
 
               <Link
 

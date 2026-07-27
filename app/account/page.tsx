@@ -74,7 +74,7 @@ export default async function AccountPage({
 
     supabase.from('subscriptions').select('*, plan:subscription_plans(name, price_monthly)').eq('customer_id', user.id).order('created_at', { ascending: false }),
 
-    supabase.from('orders').select('*, is_delayed, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name, meal_slot)), driver:drivers(name, phone)', { count: 'exact' }).eq('customer_id', user.id).order('created_at', { ascending: false }).range(ordersOffset, ordersOffset + ORDERS_PAGE_SIZE - 1),
+    supabase.from('orders').select('*, is_delayed, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name, meal_slot)), order_addons(id, name, quantity, unit_price, subtotal), driver:drivers(name, phone)', { count: 'exact' }).eq('customer_id', user.id).order('created_at', { ascending: false }).range(ordersOffset, ordersOffset + ORDERS_PAGE_SIZE - 1),
 
   ]);
 

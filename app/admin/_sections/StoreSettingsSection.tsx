@@ -7,16 +7,25 @@ import { redirect } from 'next/navigation';
 
  
 
-const BUSY_PREFIX        = 'BUSY:';
+const BUSY_PREFIX        = '__BUSY__:';
 
-const HIGH_DEMAND_PREFIX = 'HIGH DEMAND:';
+const HIGH_DEMAND_PREFIX = '__HIGH_DEMAND__:';
 
 
  
 
-export default async function StoreSettingsSection() {
+export default async function StoreSettingsSection({ auditPage: auditPageParam }: { auditPage?: string }) {
 
   const supabase = await createServerSupabaseClient();
+
+
+ 
+
+  const AUDIT_PAGE_SIZE = 10;
+
+  const auditPage   = Math.max(1, Number(auditPageParam ?? '1'));
+
+  const auditOffset = (auditPage - 1) * AUDIT_PAGE_SIZE;
 
 
  
@@ -34,15 +43,20 @@ export default async function StoreSettingsSection() {
 
  
 
-  const { data: recentLogs } = await supabase
+  const { data: recentLogs, count: auditCount } = await supabase
 
     .from('audit_logs')
 
-    .select('*')
+    .select('*', { count: 'exact' })
 
     .order('created_at', { ascending: false })
 
-    .limit(30);
+    .range(auditOffset, auditOffset + AUDIT_PAGE_SIZE - 1);
+
+
+ 
+
+  const auditTotalPages = Math.ceil((auditCount ?? 0) / AUDIT_PAGE_SIZE);
 
 
  
@@ -426,6 +440,39 @@ export default async function StoreSettingsSection() {
         ) : (
 
           <p className="text-[13px]" style={{ color: '#4B5A50' }}>No audit entries yet.</p>
+
+        )}
+
+
+ 
+
+        {/* Audit log pagination */}
+
+        {auditTotalPages > 1 && (
+
+          <div className="mt-4 flex justify-center gap-2 flex-wrap">
+
+            {Array.from({ length: auditTotalPages }, (_, i) => i + 1).map((p) => (
+
+              <a key={p}
+
+                href={`/admin?tab=settings&auditPage=${p}`}
+
+                className="flex h-9 w-9 items-center justify-center rounded-full text-[13px] font-medium"
+
+                style={p === auditPage
+
+                  ? { background: '#162019', color: '#F6F2E9' }
+
+                  : { border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+                {p}
+
+              </a>
+
+            ))}
+
+          </div>
 
         )}
 

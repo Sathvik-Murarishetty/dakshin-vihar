@@ -178,7 +178,7 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
 
     .select(
 
-      '*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name)), customer:profiles(full_name, email), driver:drivers(name)',
+      '*, order_items(id, quantity, unit_price, subtotal, menu_item:menu_items(name), meal:meals(name)), order_addons(id, name, quantity, unit_price, subtotal), customer:profiles(full_name, email), driver:drivers(name)',
 
       { count: 'exact' }
 
@@ -403,15 +403,7 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
 
             style={{ border: '1px solid rgba(22,32,25,.15)', background: allTime ? 'rgba(22,32,25,.04)' : '#FCFBF8', color: '#162019', outline: 'none' }} />
 
-          {/* Global All-time toggle — affects both customer search and order ID search */}
-
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-
-            <input type="checkbox" name="allTime" value="1" defaultChecked={allTime} className="rounded" />
-
-            <span className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>All time</span>
-
-          </label>
+          {allTime && <input type="hidden" name="allTime" value="1" />}
 
           <button type="submit" aria-label="Apply date filter"
 
@@ -422,12 +414,6 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><line x1="5" y1="1.5" x2="5" y2="4.5"/><line x1="11" y1="1.5" x2="11" y2="4.5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
 
           </button>
-
-          {allTime && (
-
-            <a href="/admin?tab=orders" className="text-[12px] font-medium" style={{ color: '#4B5A50' }}>Clear</a>
-
-          )}
 
         </form>
 
@@ -610,7 +596,15 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
 
           }> | null;
 
+          const addons   = order.order_addons as Array<{
+
+            id: string; name: string; quantity: number; subtotal: number;
+
+          }> | null;
+
           const isDelayed = (order as { is_delayed?: boolean }).is_delayed;
+
+          const isSub     = (order as { source?: string }).source === 'subscription';
 
 
  
@@ -642,6 +636,14 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
 
                     </p>
 
+                    {isSub && (
+
+                      <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
+
+                        style={{ background: 'rgba(22,100,200,.08)', color: '#1a64c8' }}>📦 Plan</span>
+
+                    )}
+
                     {isDelayed && (
 
                       <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold shrink-0"
@@ -654,7 +656,7 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
 
                   <p className="text-[12px] mt-0.5" style={{ color: '#4B5A50' }}>
 
-                    {order.meal_date} · AED {order.final_amount}
+                    Placed {new Date(order.created_at).toLocaleDateString('en-AE')} · Deliver {order.meal_date} · AED {order.final_amount}
 
                   </p>
 
@@ -729,6 +731,32 @@ export default async function OrdersSection({ date: dateParam, page: pageParam, 
                   </span>
 
                   <span style={{ color: '#4B5A50' }}>AED {item.subtotal}</span>
+
+                </div>
+
+              ))}
+
+              {/* Add-ons */}
+
+              {addons?.map((a) => (
+
+                <div key={a.id} className="flex items-center justify-between text-[12px] pl-2"
+
+                  style={{ borderTop: '1px solid rgba(22,32,25,.05)', paddingTop: '6px' }}>
+
+                  <span style={{ color: '#162019' }}>
+
+                    {a.name}
+
+                    {a.quantity > 1 && <span style={{ color: '#4B5A50' }}> ×{a.quantity}</span>}
+
+                    <span className="ml-1.5 rounded-full px-1.5 py-0.5 text-[10px]"
+
+                      style={{ background: 'rgba(216,177,90,.1)', color: '#b98a3d' }}>add-on</span>
+
+                  </span>
+
+                  <span style={{ color: '#4B5A50' }}>AED {a.subtotal}</span>
 
                 </div>
 

@@ -76,7 +76,7 @@ export default function CartDrawer() {
 
   const [couponCode,   setCouponCode]   = useState('');
 
-  const [couponData,   setCouponData]   = useState<{ couponId: string; discountAmount: number; code: string } | null>(null);
+  const [couponData,   setCouponData]   = useState<{ couponId: string; discountAmount: number; code: string; type?: string; value?: number; maxValue?: number | null } | null>(null);
 
   const [couponError,  setCouponError]  = useState<string | null>(null);
 
@@ -122,6 +122,13 @@ export default function CartDrawer() {
   const discount     = couponData?.discountAmount ?? 0;
 
   const finalTotal   = Math.max(0, cartTotal + addonTotal + DELIVERY_FEE - discount);
+
+
+ 
+
+  /** Format AED amounts uniformly: integer when whole, 2 dp when fractional */
+
+  const fmt = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(2);
 
 
  
@@ -309,7 +316,15 @@ export default function CartDrawer() {
 
   async function handleApplyCoupon() {
 
-    if (!couponCode.trim()) return;
+    const trimmedCode = couponCode.trim().toUpperCase();
+
+    if (!trimmedCode) { setCouponError('Please enter a coupon code.'); return; }
+
+    if (trimmedCode.length < 2) { setCouponError('Coupon code is too short.'); return; }
+
+    if (!/^[A-Z0-9_-]+$/.test(trimmedCode)) { setCouponError('Coupon codes only contain letters, numbers, hyphens and underscores.'); return; }
+
+    if (couponData) { setCouponError('Remove the current coupon before applying a new one.'); return; }
 
     setValidating(true);
 
@@ -323,15 +338,19 @@ export default function CartDrawer() {
 
       headers: { 'Content-Type': 'application/json' },
 
-      body: JSON.stringify({ code: couponCode.trim(), orderTotal: cartTotal }),
+      body: JSON.stringify({ code: trimmedCode, orderTotal: cartTotal + addonTotal }),
 
     });
 
     const data = await res.json();
 
-    if (data.error) setCouponError(data.error);
+    if (data.error) { setCouponError(data.error); } else {
 
-    else setCouponData(data);
+      setCouponData(data);
+
+      setCouponCode(trimmedCode); // normalise display to uppercase
+
+    }
 
     setValidating(false);
 
@@ -643,7 +662,7 @@ export default function CartDrawer() {
 
                       </div>
 
-                      <p className="mt-1 text-[13px] font-semibold" style={{ color: '#D8B15A' }}>AED {item.price}</p>
+                      <p className="mt-1 text-[13px] font-semibold" style={{ color: '#D8B15A' }}>AED {fmt(item.price)}</p>
 
                     </div>
 
@@ -732,7 +751,7 @@ export default function CartDrawer() {
 
                             )}
 
-                            <p className="text-[12px] font-semibold mt-0.5" style={{ color: '#D8B15A' }}>AED {addon.price}</p>
+                            <p className="text-[12px] font-semibold mt-0.5" style={{ color: '#D8B15A' }}>AED {fmt(addon.price)}</p>
 
                           </div>
 
@@ -1239,7 +1258,17 @@ export default function CartDrawer() {
 
                       <p className="text-[13px] font-semibold" style={{ color: '#16a34a' }}>{couponData.code} applied!</p>
 
-                      <p className="text-[12px]" style={{ color: '#4B5A50' }}>Saving AED {couponData.discountAmount}</p>
+                    <p className="text-[12px]" style={{ color: '#4B5A50' }}>
+
+                      Saving AED {fmt(couponData.discountAmount)}
+
+                      {couponData.type === 'percentage' && couponData.maxValue != null && (
+
+                        <span style={{ color: 'rgba(22,32,25,.4)' }}> (capped at AED {couponData.maxValue})</span>
+
+                      )}
+
+                    </p>
 
                     </div>
 
@@ -1316,7 +1345,7 @@ export default function CartDrawer() {
 
                   <span style={{ color: '#4B5A50' }}>Subtotal</span>
 
-                  <span style={{ color: '#162019' }}>AED {cartTotal}</span>
+                  <span style={{ color: '#162019' }}>AED {fmt(cartTotal)}</span>
 
                 </div>
 
@@ -1326,7 +1355,7 @@ export default function CartDrawer() {
 
                     <span style={{ color: '#4B5A50' }}>Add-ons</span>
 
-                    <span style={{ color: '#162019' }}>AED {addonTotal.toFixed(2)}</span>
+                    <span style={{ color: '#162019' }}>AED {fmt(addonTotal)}</span>
 
                   </div>
 
@@ -1338,7 +1367,7 @@ export default function CartDrawer() {
 
                     <span style={{ color: '#16a34a' }}>Discount</span>
 
-                    <span style={{ color: '#16a34a' }}>−AED {discount}</span>
+                    <span style={{ color: '#16a34a' }}>−AED {fmt(discount)}</span>
 
                   </div>
 
@@ -1358,7 +1387,7 @@ export default function CartDrawer() {
 
                   <span style={{ color: '#162019' }}>Total</span>
 
-                  <span style={{ color: '#162019' }}>AED {finalTotal}</span>
+                  <span style={{ color: '#162019' }}>AED {fmt(finalTotal)}</span>
 
                 </div>
 

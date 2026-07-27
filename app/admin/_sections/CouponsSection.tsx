@@ -95,19 +95,23 @@ export default async function CouponsSection({ type = 'all', active = 'all', q }
 
     await sb.from('coupons').insert({
 
-      code:            (formData.get('code') as string).toUpperCase().trim(),
+      code:                 (formData.get('code') as string).toUpperCase().trim(),
 
-      type:            formData.get('type') as string,
+      type:                 formData.get('type') as string,
 
-      value:           value ? Number(value) : null,
+      value:                value ? Number(value) : null,
 
-      min_order_value: formData.get('min_order') ? Number(formData.get('min_order')) : null,
+      min_order_value:      formData.get('min_order') ? Number(formData.get('min_order')) : null,
 
-      max_uses:        formData.get('max_uses') ? Number(formData.get('max_uses')) : null,
+      max_uses:             formData.get('max_uses') ? Number(formData.get('max_uses')) : null,
 
-      description:     (formData.get('description') as string) || null,
+      max_uses_per_person:  formData.get('max_uses_per_person') ? Number(formData.get('max_uses_per_person')) : null,
 
-      is_active:       true,
+      max_value:            formData.get('max_value') ? Number(formData.get('max_value')) : null,
+
+      description:          (formData.get('description') as string) || null,
+
+      is_active:            true,
 
     });
 
@@ -272,17 +276,21 @@ export default async function CouponsSection({ type = 'all', active = 'all', q }
 
         {[
 
-          { name: 'code',        label: 'Code',            req: true,  placeholder: 'SAVE20' },
+          { name: 'code',               label: 'Code',              req: true,  placeholder: 'SAVE20',   hint: null },
 
-          { name: 'value',       label: 'Value',           req: false, placeholder: '20' },
+          { name: 'value',              label: 'Value',             req: false, placeholder: '20',       hint: 'Percentage (e.g. 20) or fixed AED amount' },
 
-          { name: 'min_order',   label: 'Min Order (AED)', req: false, placeholder: '100' },
+          { name: 'min_order',          label: 'Min Order (AED)',   req: false, placeholder: '100',      hint: null },
 
-          { name: 'max_uses',    label: 'Max Uses',        req: false, placeholder: '100' },
+          { name: 'max_uses',           label: 'Max Total Uses',    req: false, placeholder: '100',      hint: 'Leave blank for unlimited' },
 
-          { name: 'description', label: 'Description',     req: false, placeholder: 'Optional note' },
+          { name: 'max_uses_per_person',label: 'Max Uses / Person', req: false, placeholder: '1',        hint: 'Leave blank for unlimited' },
 
-        ].map(({ name, label, req, placeholder }) => (
+          { name: 'max_value',          label: 'Max Discount Cap (AED)', req: false, placeholder: '50', hint: '% type only — caps the AED discount (e.g. 20% but never more than AED 50)' },
+
+          { name: 'description',        label: 'Description',       req: false, placeholder: 'Optional note', hint: null },
+
+        ].map(({ name, label, req, placeholder, hint }) => (
 
           <div key={name} className="flex flex-col gap-1.5">
 
@@ -301,6 +309,8 @@ export default async function CouponsSection({ type = 'all', active = 'all', q }
               style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}
 
             />
+
+            {hint && <p className="text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>{hint}</p>}
 
           </div>
 
@@ -373,7 +383,7 @@ export default async function CouponsSection({ type = 'all', active = 'all', q }
 
             <tr>
 
-              {['Code', 'Type', 'Value', 'Uses', 'Status', 'Actions'].map((h) => (
+              {['Code', 'Type', 'Value', 'Max Discount', 'Uses', 'Per Person', 'Status', 'Actions'].map((h) => (
 
                 <th
 
@@ -431,9 +441,21 @@ export default async function CouponsSection({ type = 'all', active = 'all', q }
 
                 </td>
 
+                <td className="px-4 py-3 text-[12px]" style={{ color: '#4B5A50' }}>
+
+                  {(c as { max_value?: number | null }).max_value != null ? `AED ${(c as { max_value: number }).max_value}` : '—'}
+
+                </td>
+
                 <td className="px-4 py-3" style={{ color: '#4B5A50' }}>
 
                   {c.used_count}{c.max_uses != null ? ` / ${c.max_uses}` : ''}
+
+                </td>
+
+                <td className="px-4 py-3 text-[12px]" style={{ color: '#4B5A50' }}>
+
+                  {(c as { max_uses_per_person?: number | null }).max_uses_per_person ?? '—'}
 
                 </td>
 
@@ -501,7 +523,7 @@ export default async function CouponsSection({ type = 'all', active = 'all', q }
 
               <tr>
 
-                <td colSpan={6} className="px-4 py-8 text-center text-[13px]" style={{ color: '#4B5A50' }}>
+                <td colSpan={8} className="px-4 py-8 text-center text-[13px]" style={{ color: '#4B5A50' }}>
 
                   No coupons yet.
 

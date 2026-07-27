@@ -48,9 +48,11 @@ interface Plan      { name?: string; price_monthly?: number }
 
 interface Sub       { id: string; plan: Plan | null; status: string; diet_type: string; meal_slot_preference: string; current_period_start?: string; current_period_end?: string }
 
+interface AddonItem { id: string; name: string; quantity: number; unit_price: number; subtotal: number }
+
 interface OrderItem { id: string; quantity: number; unit_price: number; subtotal: number; menu_item: { name?: string } | null; meal: { name?: string; meal_slot?: string } | null }
 
-interface Order     { id: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; source?: string; is_delayed?: boolean; order_items: OrderItem[] | null; driver: { name?: string; phone?: string } | null }
+interface Order     { id: string; created_at: string; meal_date: string; final_amount: number; subtotal: number; delivery_fee: number; discount_amount: number; status: string; notes: string | null; source?: string; is_delayed?: boolean; order_items: OrderItem[] | null; order_addons: AddonItem[] | null; driver: { name?: string; phone?: string } | null }
 
 interface Profile   { full_name?: string | null; email?: string; phone?: string | null }
 
@@ -517,15 +519,13 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
             style={{ background: 'rgba(216,177,90,.07)', border: '1px solid rgba(216,177,90,.3)' }}>
 
-            <span className="mt-0.5 shrink-0 text-[16px]">📋</span>
-
             <p className="text-[12px] leading-relaxed" style={{ color: '#b98a3d' }}>
 
               <strong style={{ color: '#162019' }}>Planning a change?</strong>{' '}
 
               If you need to update, pause, or cancel your plan, please let us know at least{' '}
 
-              <strong style={{ color: '#162019' }}>one day in advance</strong>so we can arrange it in time.
+              <strong style={{ color: '#162019' }}>one day in advance</strong> so we can arrange it in time.
 
             </p>
 
@@ -643,7 +643,7 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
               { key: 'all',    label: 'All' },
 
-              { key: 'orders', label: 'A la Carte' },
+              { key: 'orders', label: 'Orders' },
 
               { key: 'plan',   label: 'Subscription Meals' },
 
@@ -789,7 +789,7 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
                     <p className="text-[12px] truncate" style={{ color: '#4B5A50' }}>
 
-                      {order.meal_date} · {itemSummary}
+                      {new Date(order.created_at).toLocaleDateString('en-AE')} · {itemSummary}
 
                       {isSub ? (
 
@@ -946,7 +946,7 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
 
  
 
-                    {/* Items */}
+                    {/* Items + Add-ons */}
 
                     {allItems.length > 0 && (
 
@@ -975,6 +975,34 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
                               </span>
 
                               <span className="text-[13px] font-medium" style={{ color: '#4B5A50' }}>AED {item.subtotal}</span>
+
+                            </div>
+
+                          ))}
+
+                          {/* Add-ons */}
+
+                          {(order.order_addons ?? []).map((a) => (
+
+                            <div key={a.id} className="flex items-center justify-between">
+
+                              <span className="text-[13px]" style={{ color: '#162019' }}>
+
+                                {a.name}
+
+                                {a.quantity > 1 && (
+
+                                  <span className="ml-1.5 text-[12px]" style={{ color: '#4B5A50' }}>×{a.quantity}</span>
+
+                                )}
+
+                                <span className="ml-1.5 text-[11px] rounded-full px-1.5 py-0.5"
+
+                                  style={{ background: 'rgba(216,177,90,.1)', color: '#b98a3d' }}>add-on</span>
+
+                              </span>
+
+                              <span className="text-[13px] font-medium" style={{ color: '#4B5A50' }}>AED {a.subtotal}</span>
 
                             </div>
 
@@ -1087,6 +1115,43 @@ export default function AccountTabs({ initialTab, subscriptions, orders, profile
                       </div>
 
                     )}
+
+
+ 
+
+                    {/* Support contact */}
+
+                    <div className="rounded-[14px] px-5 py-4"
+
+                      style={{ background: 'rgba(22,32,25,.03)', border: '1px solid rgba(22,32,25,.07)' }}>
+
+                      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>Need Assistance?</p>
+
+                      <div className="flex flex-col gap-1.5">
+
+                        <a href="tel:+971502868698"
+
+                          className="flex items-center gap-2 text-[13px] font-medium"
+
+                          style={{ color: '#162019' }}>
+
+                          <span style={{ color: '#D8B15A' }}>📞</span> +971 50 286 8698
+
+                        </a>
+
+                        <a href="tel:+971569369259"
+
+                          className="flex items-center gap-2 text-[13px] font-medium"
+
+                          style={{ color: '#162019' }}>
+
+                          <span style={{ color: '#D8B15A' }}>📞</span> +971 56 936 9259
+
+                        </a>
+
+                      </div>
+
+                    </div>
 
                   </div>
 

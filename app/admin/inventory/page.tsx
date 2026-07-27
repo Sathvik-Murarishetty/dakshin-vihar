@@ -39,11 +39,13 @@ export default async function InventoryPage({
 
 }: {
 
-  searchParams: Promise<{ tab?: string; q?: string }>;
+  searchParams: Promise<{ tab?: string; q?: string; period?: string }>;
 
 }) {
 
-  const { tab = 'stock', q } = await searchParams;
+  const { tab = 'stock', q, period: periodParam = 'all' } = await searchParams;
+
+  const period = ['today', '7d', '30d', 'all'].includes(periodParam) ? periodParam : 'all';
 
   const today = getTodayDateString();
 
@@ -83,7 +85,7 @@ export default async function InventoryPage({
 
     .from('inventory_purchases')
 
-    .select('name, category, unit, quantity, total_price, purchased_at, vendor, receipt_url, bill_id, purchased_by, notes, id')
+    .select('name, category, unit, quantity, total_price, purchased_at, vendor, receipt_url, bill_id, purchased_by, notes, id, purchaser:profiles!purchased_by(full_name, email)')
 
     .order('purchased_at', { ascending: false });
 
@@ -199,6 +201,65 @@ export default async function InventoryPage({
   /* ── Recent purchases (last 100) ─────────────────────────────────── */
 
   const recentPurchases = (allPurchases ?? []).slice(0, 100);
+
+
+ 
+
+  /* ── Spend analytics — filtered by selected period ───────────────── */
+
+  const now       = new Date();
+
+  const todayStr  = getTodayDateString();
+
+  const last7Str  = new Date(now.getTime() - 6  * 86400000).toISOString().slice(0, 10);
+
+  const last30Str = new Date(now.getTime() - 29 * 86400000).toISOString().slice(0, 10);
+
+
+ 
+
+  const periodStart: string | null =
+
+    period === 'today' ? todayStr  :
+
+    period === '7d'    ? last7Str  :
+
+    period === '30d'   ? last30Str :
+
+    null; // 'all' — no filter
+
+
+ 
+
+  const periodPurchases = (allPurchases ?? []).filter((p) =>
+
+    periodStart === null || p.purchased_at.slice(0, 10) >= periodStart
+
+  );
+
+
+ 
+
+  const spendPeriod     = periodPurchases.reduce((s, p) => s + Number(p.total_price), 0);
+
+  const countPeriod     = periodPurchases.length;
+
+  const avgPeriod       = countPeriod > 0 ? spendPeriod / countPeriod : 0;
+
+
+ 
+
+  // Category breakdown for the selected period
+
+  const spendByCategory: Record<string, number> = {};
+
+  for (const p of periodPurchases) {
+
+    const cat = p.category ?? 'other';
+
+    spendByCategory[cat] = (spendByCategory[cat] ?? 0) + Number(p.total_price);
+
+  }
 
 
  
@@ -343,6 +404,201 @@ export default async function InventoryPage({
       {tab === 'stock' && (
 
         <div>
+
+
+ 
+
+          {/* Period switcher + spend infographics */}
+
+          {isAdmin && allPurchases && allPurchases.length > 0 && (
+
+            <div className="mb-6">
+
+              {/* Period tabs */}
+
+              <div className="flex flex-wrap gap-2 mb-4">
+
+                {[
+
+                  { id: 'today', label: 'Today' },
+
+                  { id: '7d',    label: 'Last 7 Days' },
+
+                  { id: '30d',   label: 'Last 30 Days' },
+
+                  { id: 'all',   label: 'All Time' },
+
+                ].map((p) => (
+
+                  <Link key={p.id}
+
+                    href={`/admin/inventory?tab=stock&period=${p.id}`}
+
+                    className="rounded-full px-4 py-1.5 text-[12px] font-semibold transition-colors duration-150"
+
+                    style={period === p.id
+
+                      ? { background: '#162019', color: '#F6F2E9' }
+
+                      : { border: '1px solid rgba(22,32,25,.15)', color: '#4B5A50' }}>
+
+                    {p.label}
+
+                  </Link>
+
+                ))}
+
+              </div>
+
+
+ 
+
+              {/* Stat cards */}
+
+              <div className="grid gap-3 sm:grid-cols-3">
+
+                <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: '#4B5A50' }}>Total Spend</p>
+
+                  <p className="font-display text-[30px] font-bold leading-none" style={{ color: '#162019' }}>
+
+                    AED {spendPeriod.toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+
+                  </p>
+
+                  <p className="mt-1 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>
+
+                    {period === 'today' ? 'today' : period === '7d' ? 'last 7 days' : period === '30d' ? 'last 30 days' : 'all time'}
+
+                  </p>
+
+                </div>
+
+
+ 
+
+                <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: '#4B5A50' }}>Purchases</p>
+
+                  <p className="font-display text-[30px] font-bold leading-none" style={{ color: '#162019' }}>{countPeriod}</p>
+
+                  <p className="mt-1 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>bill entries logged</p>
+
+                </div>
+
+
+ 
+
+                <div className="rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: '#4B5A50' }}>Avg per Purchase</p>
+
+                  <p className="font-display text-[30px] font-bold leading-none" style={{ color: '#162019' }}>
+
+                    {countPeriod > 0
+
+                      ? `AED ${avgPeriod.toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`
+
+                      : '—'}
+
+                  </p>
+
+                  <p className="mt-1 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>per bill entry</p>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          )}
+
+
+ 
+
+          {/* Spend by category — filtered for the selected period */}
+
+          {isAdmin && Object.keys(spendByCategory).length > 0 && (
+
+            <div className="mb-6 rounded-[16px] p-5" style={{ background: '#FCFBF8', border: '1px solid rgba(22,32,25,.08)' }}>
+
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-4" style={{ color: '#4B5A50' }}>Spend by Category</p>
+
+              <div className="flex flex-col gap-3">
+
+                {Object.entries(spendByCategory)
+
+                  .sort(([, a], [, b]) => b - a)
+
+                  .map(([cat, amt]) => {
+
+                    const pct = spendPeriod > 0 ? (amt / spendPeriod) * 100 : 0;
+
+                    return (
+
+                      <div key={cat}>
+
+                        <div className="flex justify-between mb-1">
+
+                          <div className="flex items-center gap-2">
+
+                            <span className="h-2 w-2 rounded-full shrink-0"
+
+                              style={{ background: CAT_COLORS[cat] ?? '#162019' }} />
+
+                            <span className="text-[13px] capitalize font-medium" style={{ color: '#162019' }}>{cat}</span>
+
+                          </div>
+
+                          <span className="text-[12px] font-semibold" style={{ color: '#162019' }}>
+
+                            AED {amt.toLocaleString('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+
+                            <span className="ml-2 font-normal" style={{ color: 'rgba(22,32,25,.4)' }}>{pct.toFixed(0)}%</span>
+
+                          </span>
+
+                        </div>
+
+                        <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(22,32,25,.06)' }}>
+
+                          <div className="h-full rounded-full transition-all duration-500"
+
+                            style={{ width: `${pct}%`, background: CAT_COLORS[cat] ?? '#162019' }} />
+
+                        </div>
+
+                      </div>
+
+                    );
+
+                  })}
+
+              </div>
+
+            </div>
+
+          )}
+
+
+ 
+
+          {countPeriod === 0 && period !== 'all' && allPurchases && allPurchases.length > 0 && (
+
+            <div className="mb-6 rounded-[14px] px-5 py-4 text-center text-[13px]"
+
+              style={{ background: 'rgba(22,32,25,.03)', border: '1px solid rgba(22,32,25,.06)', color: '#4B5A50' }}>
+
+              No purchases in this period.
+
+            </div>
+
+          )}
+
+
+ 
 
           {stockItems.length === 0 ? (
 
@@ -522,7 +778,7 @@ export default async function InventoryPage({
 
                 <tr>
 
-                  {['Date', 'Item', 'Category', 'Qty', 'Price (AED)', 'Vendor', 'Receipt', ''].map((h) => (
+                  {['Date', 'Item', 'Category', 'Qty', 'Price (AED)', 'Vendor', 'Added By', 'Receipt', ''].map((h) => (
 
                     <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em]"
 
@@ -587,6 +843,18 @@ export default async function InventoryPage({
                     <td className="px-4 py-3 text-[12px]" style={{ color: '#4B5A50' }}>
 
                       {p.vendor ?? '—'}
+
+                    </td>
+
+                    <td className="px-4 py-3 text-[12px]" style={{ color: '#4B5A50' }}>
+
+                      {(() => {
+
+                        const pr = (p as { purchaser?: { full_name?: string; email?: string } | null }).purchaser;
+
+                        return pr?.full_name ?? pr?.email ?? '—';
+
+                      })()}
 
                     </td>
 

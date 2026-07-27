@@ -93,7 +93,7 @@ export default async function SubscriptionDetailPage({
 
  
 
-  /* ── Server Actions ─────────────────────────────────── */
+  /* â”€â”€ Server Actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 
  
@@ -131,7 +131,9 @@ export default async function SubscriptionDetailPage({
 
  
 
-  /** Renew: extends from the CURRENT end date (if still in the future), else from today. */
+  /** Renew: if the sub was paused, extends by the exact pause duration.
+
+   *  Otherwise extends by 30 days from the current end (or today if expired). */
 
   async function renew30Days() {
 
@@ -139,23 +141,64 @@ export default async function SubscriptionDetailPage({
 
     const sb  = createServiceSupabaseClient();
 
-    const now = new Date();
+    // Re-fetch live values so we get the latest paused_at / period_end
 
-    const currentEnd = sub.current_period_end ? new Date(sub.current_period_end) : null;
+    const { data: live } = await sb
 
-    // If the subscription hasn't expired yet, stack 30 days on top of current end date
+      .from('subscriptions')
 
-    const base   = currentEnd && currentEnd > now ? currentEnd : now;
+      .select('paused_at, current_period_end')
 
-    const newEnd = new Date(base);
+      .eq('id', id)
 
-    newEnd.setMonth(newEnd.getMonth() + 1);
+      .single();
+
+
+ 
+
+    const now      = new Date();
+
+    let newEnd: Date;
+
+
+ 
+
+    if (live?.paused_at) {
+
+      // Resume from pause â€” extend end date by however long it was paused
+
+      const pausedAt     = new Date(live.paused_at);
+
+      const pauseMs      = now.getTime() - pausedAt.getTime();
+
+      const originalEnd  = live.current_period_end ? new Date(live.current_period_end) : now;
+
+      newEnd = new Date(originalEnd.getTime() + pauseMs);
+
+    } else {
+
+      // Normal renew â€” stack 30 days on current end or today
+
+      const currentEnd = live?.current_period_end ? new Date(live.current_period_end) : null;
+
+      const base = currentEnd && currentEnd > now ? currentEnd : now;
+
+      newEnd = new Date(base);
+
+      newEnd.setMonth(newEnd.getMonth() + 1);
+
+    }
+
+
+ 
 
     await sb.from('subscriptions').update({
 
       status:             'active',
 
       current_period_end: newEnd.toISOString(),
+
+      paused_at:          null,
 
     }).eq('id', id);
 
@@ -274,19 +317,15 @@ export default async function SubscriptionDetailPage({
 
     'use server';
 
-    const sb  = createServiceSupabaseClient();
+    const sb = createServiceSupabaseClient();
 
-    // "Pause" = set end date to today, keeping status active
+    // Record when the pause started; preserve original period_end so we can
 
-    // Admin can renew later with the Renew 30 Days button
-
-    const today = new Date();
-
-    today.setHours(23, 59, 59, 0);
+    // calculate the pause duration when the admin resumes.
 
     await sb.from('subscriptions').update({
 
-      current_period_end: today.toISOString(),
+      paused_at: new Date().toISOString(),
 
     }).eq('id', id);
 
@@ -571,7 +610,7 @@ export default async function SubscriptionDetailPage({
 
                 style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}>
 
-                <option value="">— No address —</option>
+                <option value="">â€” No address â€”</option>
 
                 {allAddresses.map((a) => (
 
@@ -654,7 +693,11 @@ export default async function SubscriptionDetailPage({
 
       {(() => {
 
-        const isExpired = sub.status === 'active' && sub.current_period_end
+        const isPaused  = !!(sub as { paused_at?: string | null }).paused_at;
+
+        const pausedAt  = isPaused ? new Date((sub as { paused_at: string }).paused_at) : null;
+
+        const isExpired = !isPaused && sub.status === 'active' && sub.current_period_end
 
           ? new Date(sub.current_period_end) < new Date()
 
@@ -664,11 +707,15 @@ export default async function SubscriptionDetailPage({
 
           <div className="mb-6 flex flex-wrap gap-3 rounded-[16px] p-5"
 
-            style={{ background: '#FCFBF8', border: isExpired ? '1.5px solid rgba(185,58,58,.2)' : '1px solid rgba(22,32,25,.08)' }}>
+            style={{ background: '#FCFBF8', border: (isPaused || isExpired) ? '1.5px solid rgba(216,177,90,.3)' : '1px solid rgba(22,32,25,.08)' }}>
 
             <p className="w-full text-[11px] font-semibold uppercase tracking-[0.1em]" style={{ color: '#4B5A50' }}>
 
-              Actions {isExpired && <span style={{ color: '#b93a3a' }}>· Paused / Expired — use Renew to resume</span>}
+              Actions
+
+              {isPaused && <span style={{ color: '#b98a3d' }}> &middot; Paused since {pausedAt?.toLocaleDateString('en-AE')} &mdash; Resume to extend end date</span>}
+
+              {isExpired && !isPaused && <span style={{ color: '#b93a3a' }}> &middot; Expired &mdash; use Renew to resume</span>}
 
             </p>
 
@@ -688,7 +735,7 @@ export default async function SubscriptionDetailPage({
 
             )}
 
-            {sub.status === 'active' && !isExpired && (
+            {sub.status === 'active' && !isExpired && !isPaused && (
 
               <form action={cancel}>
 
@@ -704,7 +751,7 @@ export default async function SubscriptionDetailPage({
 
             )}
 
-            {(isExpired || sub.status === 'canceled') && (
+            {(isPaused || isExpired || sub.status === 'canceled') && (
 
               <form action={renew30Days}>
 
@@ -712,7 +759,7 @@ export default async function SubscriptionDetailPage({
 
                   style={{ background: 'rgba(216,177,90,.12)', color: '#b98a3d', border: '1px solid rgba(216,177,90,.3)' }}>
 
-                  Renew +30 Days
+                  {isPaused ? 'Resume & Extend' : 'Renew +30 Days'}
 
                 </button>
 
@@ -720,9 +767,9 @@ export default async function SubscriptionDetailPage({
 
             )}
 
-            {/* Also allow extending an active (non-expired) subscription */}
+            {/* Extend active non-paused subscription */}
 
-            {sub.status === 'active' && !isExpired && (
+            {sub.status === 'active' && !isExpired && !isPaused && (
 
               <form action={renew30Days}>
 
@@ -738,9 +785,9 @@ export default async function SubscriptionDetailPage({
 
             )}
 
-            {/* Pause: only available when active and not already expired */}
+            {/* Pause: only when active, not expired, not already paused */}
 
-            {sub.status === 'active' && !isExpired && (
+            {sub.status === 'active' && !isExpired && !isPaused && (
 
               <form action={pauseSubscription}>
 
@@ -748,7 +795,7 @@ export default async function SubscriptionDetailPage({
 
                   style={{ background: 'rgba(22,32,25,.06)', color: '#4B5A50', border: '1px solid rgba(22,32,25,.15)' }}>
 
-                  Pause (end today)
+                  Pause
 
                 </button>
 
@@ -1008,7 +1055,7 @@ export default async function SubscriptionDetailPage({
 
  
 
-      {/* ── Slot Overrides ────────────────────────────────────── */}
+      {/* â”€â”€ Slot Overrides â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
 
       <div className="rounded-[20px] p-6 flex flex-col gap-5"
 
