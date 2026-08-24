@@ -4,6 +4,8 @@ import Navbar from '@/components/Navbar';
 
 import Footer from '@/components/Footer';
 
+import AddToHomeScreen from '@/components/AddToHomeScreen';
+
 
  
 
@@ -14,6 +16,8 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     <>
 
       <Navbar />
+
+      <AddToHomeScreen />
 
       {/* overflow-x is already handled globally on html/body in globals.css;
 

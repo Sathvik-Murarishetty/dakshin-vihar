@@ -610,126 +610,133 @@ export default async function InventoryPage({
 
           ) : (
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="rounded-[20px] overflow-x-auto" style={{ border: '1px solid rgba(22,32,25,.1)' }}>
 
-              {stockItems.map((item) => (
+              <table className="w-full text-[13px]" style={{ minWidth: '560px' }}>
 
-                <div key={item.name}
+                <thead style={{ background: '#F6F2E9' }}>
 
-                  className="rounded-[16px] p-4"
+                  <tr>
 
-                  style={{
+                    {['Item', 'Category', 'In Stock', isAdmin ? 'Alert At' : ''].filter(Boolean).map((h) => (
 
-                    background: '#FCFBF8',
+                      <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em]"
 
-                    border: item.isLow
+                        style={{ color: '#4B5A50' }}>{h}</th>
 
-                      ? '1.5px solid rgba(185,58,58,.3)'
+                    ))}
 
-                      : '1px solid rgba(22,32,25,.08)',
+                  </tr>
 
-                  }}>
+                </thead>
 
-                  {/* Category dot + name */}
+                <tbody>
 
-                  <div className="flex items-start gap-2 mb-3">
+                  {stockItems.map((item, i) => (
 
-                    <span className="mt-1 h-2 w-2 shrink-0 rounded-full"
+                    <tr key={item.name}
 
-                      style={{ background: CAT_COLORS[item.category] ?? '#162019' }} />
+                      style={{ background: i % 2 === 0 ? '#FCFBF8' : 'white', borderTop: '1px solid rgba(22,32,25,.06)' }}>
 
-                    <div className="flex-1 min-w-0">
+                      <td className="px-4 py-3">
 
-                      <p className="font-semibold text-[14px] leading-snug" style={{ color: '#162019' }}>{item.name}</p>
+                        <div className="flex items-center gap-2">
 
-                      <p className="text-[11px] capitalize" style={{ color: '#4B5A50' }}>{item.category}</p>
+                          <span className="h-2 w-2 shrink-0 rounded-full"
 
-                    </div>
+                            style={{ background: CAT_COLORS[item.category] ?? '#162019' }} />
 
-                    {item.isLow && (
+                          <p className="font-medium" style={{ color: '#162019' }}>{item.name}</p>
 
-                      <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                          {item.isLow && (
 
-                        style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a' }}>Low</span>
+                            <span className="rounded-full px-1.5 py-0.5 text-[9px] font-bold"
 
-                    )}
+                              style={{ background: 'rgba(185,58,58,.08)', color: '#b93a3a' }}>LOW</span>
 
-                  </div>
+                          )}
 
+                        </div>
 
- 
+                      </td>
 
-                  {/* Stock value */}
+                      <td className="px-4 py-3">
 
-                  <p className="font-bold text-[24px] leading-none" style={{ color: item.isLow ? '#b93a3a' : '#162019' }}>
+                        <span className="rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize"
 
-                    {item.qty.toFixed(item.qty % 1 === 0 ? 0 : 2)}
+                          style={{ background: `${CAT_COLORS[item.category] ?? '#162019'}18`, color: CAT_COLORS[item.category] ?? '#162019' }}>
 
-                    <span className="ml-1 text-[14px] font-normal" style={{ color: '#4B5A50' }}>{item.unit}</span>
+                          {item.category}
 
-                  </p>
+                        </span>
 
+                      </td>
 
- 
+                      <td className="px-4 py-3 font-bold text-[15px]"
 
-                  {/* Threshold */}
+                        style={{ color: item.isLow ? '#b93a3a' : '#162019' }}>
 
-                  {item.threshold > 0 && (
+                        {item.qty.toFixed(item.qty % 1 === 0 ? 0 : 2)}
 
-                    <p className="mt-1 text-[11px]" style={{ color: 'rgba(22,32,25,.4)' }}>
+                        <span className="ml-1 text-[12px] font-normal" style={{ color: '#4B5A50' }}>{item.unit}</span>
 
-                      Alert when ≤ {item.threshold} {item.unit}
+                      </td>
 
-                    </p>
+                      {isAdmin && (
 
-                  )}
+                        <td className="px-4 py-3">
 
+                          <form action={saveThreshold} className="flex flex-col gap-0.5">
 
- 
+                            <input type="hidden" name="item_name" value={item.name} />
 
-                  {/* Set threshold (admin only) */}
+                            <input type="hidden" name="unit" value={item.unit} />
 
-                  {isAdmin && (
+                            <div className="flex gap-1.5 items-center">
 
-                    <form action={saveThreshold} className="mt-3 flex flex-col gap-1">
+                              <input type="number" name="threshold" min="0" step="0.01"
 
-                      <div className="flex gap-1.5 items-center">
+                                defaultValue={item.threshold || ''}
 
-                        <input type="hidden" name="item_name" value={item.name} />
+                                placeholder="0"
 
-                        <input type="hidden" name="unit" value={item.unit} />
+                                className="w-16 rounded-[8px] px-2 py-1.5 text-[12px]"
 
-                        <input type="number" name="threshold" min="0" step="0.01"
+                                style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
 
-                          defaultValue={item.threshold || ''}
+                              <span className="text-[11px]" style={{ color: '#4B5A50' }}>{item.unit}</span>
 
-                          placeholder="Alert at"
+                              <button type="submit"
 
-                          className="w-20 rounded-[8px] px-2 py-1.5 text-[11px]"
+                                className="rounded-[8px] px-2 py-1.5 text-[11px] font-medium"
 
-                          style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }} />
+                                style={{ background: 'rgba(22,32,25,.08)', color: '#162019' }}>
 
-                        <button type="submit"
+                                Set
 
-                          className="rounded-[8px] px-2 py-1.5 text-[11px] font-medium"
+                              </button>
 
-                          style={{ background: 'rgba(22,32,25,.08)', color: '#162019' }}>
+                            </div>
 
-                          Set
+                            {item.threshold > 0 && (
 
-                        </button>
+                              <p className="text-[10px]" style={{ color: 'rgba(22,32,25,.4)' }}>current: ≤ {item.threshold} {item.unit}</p>
 
-                      </div>
+                            )}
 
-                      <p className="text-[10px]" style={{ color: 'rgba(22,32,25,.35)' }}>Set to 0 to clear alert</p>
+                          </form>
 
-                    </form>
+                        </td>
 
-                  )}
+                      )}
 
-                </div>
+                    </tr>
 
-              ))}
+                  ))}
+
+                </tbody>
+
+              </table>
 
             </div>
 
@@ -757,7 +764,7 @@ export default async function InventoryPage({
 
       {tab === 'usage' && (
 
-        <InventoryUsageForm itemNames={purchasedItemNames} today={today} />
+        <InventoryUsageForm stockItems={stockItems} today={today} />
 
       )}
 

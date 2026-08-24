@@ -11,6 +11,7 @@ import { ToastProvider } from '@/hooks/useToast';
 import AdminSidebar from './_components/AdminSidebar';
 import { ROLE_TABS } from './_components/roles';
 import AdminToastReader from './_components/AdminToastReader';
+import AdminOrderAlert from '@/components/AdminOrderAlert';
 
 export default async function AdminLayout({
   children,
@@ -68,6 +69,7 @@ export default async function AdminLayout({
       </Suspense>
 
       <ToastProvider>
+        <AdminOrderAlert />
         <main className="flex-1 overflow-auto p-6 pt-20 md:p-8 md:pt-8">
           <Suspense fallback={null}>
             <AdminToastReader />
