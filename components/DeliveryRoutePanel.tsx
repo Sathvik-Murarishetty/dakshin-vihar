@@ -132,13 +132,19 @@ function singleNavUrl(s: DeliveryStop): string {
 
 function buildRouteUrl(stops: DeliveryStop[]): string {
 
-  // Google Maps dir URL: /dir/stop1/stop2/.../stopN
+  if (stops.length === 0) return '#';
 
-  // First stop = starting point, rest = waypoints
+  if (stops.length === 1) return singleNavUrl(stops[0]);
 
-  const params = stops.map(stopToParam);
+  // Last stop = destination; everything before it = waypoints.
 
-  return `https://www.google.com/maps/dir/${params.join('/')}`;
+  // No origin → Google Maps uses the driver's current GPS location.
+
+  const destination = stopToParam(stops[stops.length - 1]);
+
+  const waypoints   = stops.slice(0, -1).map(stopToParam).join('|');
+
+  return `https://www.google.com/maps/dir/?api=1&destination=${destination}&waypoints=${encodeURIComponent(waypoints)}&travelmode=driving`;
 
 }
 
