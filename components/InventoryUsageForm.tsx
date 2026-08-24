@@ -38,11 +38,6 @@ interface Props {
 
  
 
-const UNITS = ['kg', 'g', 'L', 'mL', 'pcs', 'bags', 'boxes', 'packets'];
-
-
- 
-
 const CAT_COLORS: Record<string, string> = {
 
   produce: '#16a34a', dairy: '#1a64c8', spices: '#b98a3d',
@@ -65,13 +60,7 @@ export default function InventoryUsageForm({ stockItems, today }: Props) {
 
   const [notes, setNotes] = useState('');
 
-  const [qtys,     setQtys]    = useState<Record<string, string>>({});
-
-  const [units,    setUnits]   = useState<Record<string, string>>(
-
-    Object.fromEntries(stockItems.map((s) => [s.name, s.unit]))
-
-  );
+  const [qtys,    setQtys]   = useState<Record<string, string>>({});
 
   const [logging, setLogging] = useState<string | null>(null);
 
@@ -84,19 +73,29 @@ export default function InventoryUsageForm({ stockItems, today }: Props) {
 
   async function logItem(itemName: string) {
 
-    const qty = qtys[itemName];
+    const qty  = qtys[itemName];
+
+    const item = stockItems.find((s) => s.name === itemName)!;
 
     if (!qty || Number(qty) <= 0) { setErrors((p) => ({ ...p, [itemName]: 'Enter qty' })); return; }
 
+    if (Number(qty) > item.qty) {
+
+      setErrors((p) => ({ ...p, [itemName]: `Max: ${item.qty.toFixed(item.qty % 1 === 0 ? 0 : 2)} ${item.unit}` }));
+
+      return;
+
+    }
+
     setLogging(itemName); setErrors((p) => ({ ...p, [itemName]: '' }));
 
-    const res  = await fetch('/api/admin/inventory/usage', {
+    const res = await fetch('/api/admin/inventory/usage', {
 
       method:  'POST',
 
       headers: { 'Content-Type': 'application/json' },
 
-      body:    JSON.stringify({ itemName, quantity: Number(qty), unit: units[itemName], notes, date }),
+      body:    JSON.stringify({ itemName, quantity: Number(qty), unit: item.unit, notes, date }),
 
     });
 
@@ -191,7 +190,7 @@ export default function InventoryUsageForm({ stockItems, today }: Props) {
 
             <tr>
 
-              {['Item', 'In Stock', 'Qty Used', 'Unit', ''].map((h) => (
+              {['Item', 'In Stock', 'Qty Used', ''].map((h) => (
 
                 <th key={h} className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-[0.08em]"
 
@@ -251,6 +250,8 @@ export default function InventoryUsageForm({ stockItems, today }: Props) {
 
                   <input type="number" min="0.01" step="0.01"
 
+                    max={item.qty > 0 ? item.qty : undefined}
+
                     value={qtys[item.name] ?? ''}
 
                     onChange={(e) => setQtys((p) => ({ ...p, [item.name]: e.target.value }))}
@@ -271,25 +272,9 @@ export default function InventoryUsageForm({ stockItems, today }: Props) {
 
                 <td className="px-4 py-3">
 
-                  <select value={units[item.name] ?? item.unit}
-
-                    onChange={(e) => setUnits((p) => ({ ...p, [item.name]: e.target.value }))}
-
-                    className="rounded-[8px] px-2 py-1.5 text-[12px]"
-
-                    style={{ border: '1px solid rgba(22,32,25,.15)', background: 'white', color: '#162019', outline: 'none' }}>
-
-                    {UNITS.map((u) => <option key={u}>{u}</option>)}
-
-                  </select>
-
-                </td>
-
-                <td className="px-4 py-3">
-
                   {done[item.name] ? (
 
-                    <span className="text-[12px] font-semibold" style={{ color: '#16a34a' }}>âœ“ Logged</span>
+                    <span className="text-[12px] font-semibold" style={{ color: '#16a34a' }}>Saved</span>
 
                   ) : (
 
@@ -299,7 +284,7 @@ export default function InventoryUsageForm({ stockItems, today }: Props) {
 
                       style={{ background: '#162019', color: '#F6F2E9', opacity: logging === item.name ? 0.5 : 1 }}>
 
-                      {logging === item.name ? 'â€¦' : 'Log'}
+                      {logging === item.name ? 'Saving...' : 'Log'}
 
                     </button>
 
