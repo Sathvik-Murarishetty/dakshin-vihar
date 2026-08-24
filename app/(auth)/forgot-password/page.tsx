@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
 
             <div className="text-center">
 
-              <p className="font-semibold text-[16px]" style={{ color: '#F6F2E9' }}>Check your inbox</p>
+              <p className="font-semibold text-[16px]" style={{ color: '#F6F2E9' }}>Check your Inbox</p>
 
               <p className="mt-2 text-[13px] leading-relaxed" style={{ color: 'rgba(246,242,233,.55)' }}>
 
