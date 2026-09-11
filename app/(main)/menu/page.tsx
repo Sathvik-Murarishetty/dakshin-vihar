@@ -256,7 +256,7 @@ export default function MenuPage() {
 
           <p className="text-[13px] font-semibold" style={{ color: '#162019' }}>Want these meals delivered every day?</p>
 
-          <p className="text-[12px]" style={{ color: '#4B5A50' }}>From AED 1,499/mo · cancel anytime</p>
+          <p className="text-[12px]" style={{ color: '#4B5A50' }}>From AED 250/mo · cancel anytime</p>
 
         </div>
 
