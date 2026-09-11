@@ -33,7 +33,7 @@ const SERVICES = [
     title: 'Corporate Catering',
     description:
       'Premium South Indian catering for offices, business lunches, celebrations and private events across Dubai.',
-    href: '/contact',
+    href: '/#contact',
     cta: 'Enquire Now',
     background: 'linear-gradient(150deg,#0D0F18 0%,#161A2A 100%)',
   },

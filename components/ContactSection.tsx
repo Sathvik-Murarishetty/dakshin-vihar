@@ -173,7 +173,7 @@ export default function ContactSection() {
             />
 
             <Link
-              href="/contact"
+              href="/#contact"
               className="btn-gold w-full justify-center"
             >
               Get Directions
