@@ -562,20 +562,6 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
               <Link
 
-                href={`/admin/drivers/${driver.id}`}
-
-                className="rounded-full px-3 py-1 text-[11px] font-medium"
-
-                style={{ background: '#162019', color: '#F6F2E9' }}
-
-              >
-
-                View
-
-              </Link>
-
-              <Link
-
                 href={`/admin/drivers/${driver.id}/edit`}
 
                 className="rounded-full px-3 py-1 text-[11px] font-medium"
@@ -584,11 +570,9 @@ export default async function DriversSection({ status = 'all', q }: Props) {
 
               >
 
-                Edit
+                View / Edit
 
               </Link>
-
-              <DeleteDriverButton driverId={driver.id} />
 
             </div>
 
