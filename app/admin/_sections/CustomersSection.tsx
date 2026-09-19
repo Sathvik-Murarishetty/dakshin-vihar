@@ -20,8 +20,6 @@ const ROLE_OPTS = [
 
   { value: 'staff',    label: 'Staff' },
 
-  { value: 'driver',   label: 'Driver' },
-
   { value: 'kitchen',  label: 'Kitchen' },
 
   { value: 'cook',     label: 'Cook' },
